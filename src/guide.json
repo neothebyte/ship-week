@@ -1,0 +1,114 @@
+{
+ "glossary": [
+  {
+   "term": "Git",
+   "sub": "ဗားရှင်း ထိန်းစနစ်",
+   "def": "Code ရဲ့ ပြောင်းလဲမှု မှတ်တမ်းတိုင်းကို သိမ်းထားပေးတဲ့ tool။ အရင်ဗားရှင်းကို ပြန်သွားလို့ရတယ်။"
+  },
+  {
+   "term": "Commit",
+   "sub": "save point",
+   "def": "အချိန်တစ်ခုမှာရှိတဲ့ code အခြေအနေကို မှတ်စုတိုလေးနဲ့ သိမ်းထားတာ။"
+  },
+  {
+   "term": "Branch",
+   "sub": "ခွဲထားတဲ့ လမ်းကြောင်း",
+   "def": "Main code ကို မထိဘဲ သီးသန့်နေရာမှာ ပြောင်းလဲမှု စမ်းလုပ်တဲ့ မိတ္တူ။"
+  },
+  {
+   "term": "PR · Pull Request",
+   "sub": "ပေါင်းထည့်ဖို့ တောင်းဆိုချက်",
+   "def": "Branch က ပြောင်းလဲမှုကို main ထဲ ပေါင်းဖို့ တောင်းဆိုတာ။ Merge မလုပ်ခင် ဒီမှာ စစ်တယ်။"
+  },
+  {
+   "term": "Terminal",
+   "sub": "command line",
+   "def": "စာရိုက်ပြီး ကွန်ပျူတာကို ခိုင်းတဲ့ window။ App run တာ၊ package ထည့်တာ ဒီမှာ လုပ်တယ်။"
+  },
+  {
+   "term": "DevTools Console",
+   "sub": "browser developer tools",
+   "def": "Browser ထဲက error နဲ့ message တွေ ပြတဲ့နေရာ။ Mac ပေါ်က Chrome မှာ Cmd + Option + J နဲ့ ဖွင့်တယ်။"
+  },
+  {
+   "term": "DevTools Network",
+   "sub": "network tab",
+   "def": "App က server ကို ခေါ်တဲ့ request တိုင်းနဲ့ အဖြေ (အောင်/မအောင်) ကို ပြတဲ့ tab။"
+  },
+  {
+   "term": "Frontend",
+   "sub": "user မြင်ရတဲ့ဘက်",
+   "def": "Browser ထဲမှာ run တဲ့ အပိုင်း (React)။ ဘယ်သူမဆို ဖွင့်ကြည့်လို့ရလို့ public ပါ။"
+  },
+  {
+   "term": "Backend",
+   "sub": "server ဘက်",
+   "def": "Server ပေါ်မှာ run တဲ့ အပိုင်း။ Database နဲ့ လျှို့ဝှက် key တွေကို ဒီမှာ ကိုင်တယ်။"
+  },
+  {
+   "term": "API",
+   "sub": "Application Programming Interface",
+   "def": "Program တစ်ခုနဲ့ တစ်ခု ဆက်သွယ်ဖို့ သတ်မှတ်ထားတဲ့ နည်းလမ်း။ ဥပမာ app က Gemini ကို API နဲ့ ခေါ်တယ်။"
+  },
+  {
+   "term": "API key",
+   "sub": "သော့",
+   "def": "Service တစ်ခုကို သုံးခွင့်ရှိကြောင်း ပြတဲ့ လျှို့ဝှက်စာသား။ Password လိုပဲ ထိန်းသိမ်းရမယ်။"
+  },
+  {
+   "term": "Environment variable",
+   "sub": "env var",
+   "def": "Code အပြင်ဘက်မှာ ထားတဲ့ setting တန်ဖိုး။ Key တွေကို code ထဲ မရေးဘဲ ဒီလို ထားတယ်။"
+  },
+  {
+   "term": ".env",
+   "sub": "env file",
+   "def": "Environment variable တွေ ရေးထားတဲ့ file။ .gitignore ထဲ ထည့်ပြီး GitHub ပေါ် မတင်ရ။"
+  },
+  {
+   "term": "Dependency · Package",
+   "sub": "npm package",
+   "def": "တခြားသူ ရေးထားတဲ့ code အစုအဝေး (npm ကနေ ထည့်တယ်)။ ကိုယ့် app က အဲ့ဒါကို မှီခိုတယ်။"
+  },
+  {
+   "term": "Deploy",
+   "sub": "ထုတ်တင်ခြင်း",
+   "def": "App ကို internet ပေါ် တင်ပြီး တခြားသူတွေ သုံးလို့ရအောင် လုပ်တာ။"
+  },
+  {
+   "term": "Staging · Production",
+   "sub": "preview · live",
+   "def": "Staging (preview) က စမ်းသပ်ဖို့ မိတ္တူ၊ production က လူတကယ်သုံးနေတဲ့ app။"
+  },
+  {
+   "term": "RLS",
+   "sub": "Row Level Security",
+   "def": "Database (Supabase) မှာ user တစ်ယောက်ချင်းစီ ကိုယ့် data ကိုပဲ မြင်ရအောင် ကန့်သတ်တဲ့ စည်းမျဉ်း။"
+  },
+  {
+   "term": "Test",
+   "sub": "automated test",
+   "def": "Code မှန်မမှန် အလိုအလျောက် စစ်ပေးတဲ့ code။ ပြောင်းလဲမှုအသစ်က အဟောင်းကို ပျက်မပျက် သိစေတယ်။"
+  }
+ ],
+ "code": {
+  "spec": "# Study Notes — Spec (v1)\n\n## What\nစာကျက်ရင်း မှတ်စုတိုတွေ ရေးပြီး ပြန်ရှာလို့ရတဲ့ web app\n\n## Who\nအတန်း၊ စာအုပ်တွေကနေ မှတ်စုလုပ်ချင်တဲ့ ကျောင်းသား (ဖုန်းနဲ့ အဓိက သုံးမယ်)\n\n## v1 features (3–4 only)\n1. Note အသစ်ရေး / ပြင် / ဖျက်\n2. Title နဲ့ ရှာဖွေ\n3. Tag တပ်\n4. Login (ကိုယ့် note ကို ကိုယ်ပဲ မြင်ရ)\n\n## Later (not v1)\n- Audio recording\n- Share with friends",
+  "agents": "# Agent rules — Study Notes\n\n## Stack (do not change)\n- Vite + React + TypeScript\n- Supabase (auth + database)\n- Every PR gets a preview deploy before production\n\n## Design language\n- Clean, minimal, typography-first. Lots of whitespace.\n- One accent color: #4f5bd5 (light) / #8f98f3 (dark).\n- No gradients, no emoji. Dark mode via prefers-color-scheme.\n- Burmese text: Pyidaungsu. Latin text: SF Pro.\n\n## Working rules\n- Keep each change small and focused on the task.\n- Do not rewrite working code unless asked.\n- Never put API keys or secrets in code. Use .env.\n- Every screen needs loading, error and empty states.\n- At the end, list: files changed, why, and what you did NOT test.\n\n## Do not touch\n- supabase/migrations/ (ask first)\n- .env, .env.*\n- package.json dependencies (ask before adding a package)",
+  "prompt": "Goal:\n<ဘာဖြစ်လာစေချင်လဲ — တစ်ကြောင်း၊ နှစ်ကြောင်း>\n\nContext:\n<ဘယ် page / file / component လဲ၊ data ဘယ်ကလာလဲ>\n\nDon't touch:\n<မပြောင်းရမယ့် file၊ feature၊ design>\n\nHow to verify:\n<ဘာလုပ်ရင် ဘာမြင်ရမလဲ — အောင်မြင်တဲ့ အခြေအနေ>\n\nWhen done, tell me: files changed, why, and what you did not test.",
+  "bad": "App ကို ပိုကောင်းအောင် လုပ်ပေး။ Login ထည့်၊ dark mode ထည့်၊ bug တွေလည်း ပြင်ပေး။",
+  "good": "Goal: Note list မှာ title နဲ့ ရှာလို့ရတဲ့ search box ထည့်ပါ။\nContext: src/pages/NotesList.tsx — note data က useNotes() hook ကလာတယ်။\nDon't touch: routing၊ Supabase schema၊ တခြား page တွေ။\nVerify: \"သင်္ချာ\" လို့ ရိုက်ရင် ကိုက်တဲ့ note တွေပဲ ပြရမယ်။ မတွေ့ရင် \"မတွေ့ပါ\" ပြရမယ်။",
+  "bug": "Problem:\n<ဘာဖြစ်နေလဲ — တစ်ကြောင်း>\n\nSteps to reproduce:\n1. <ဘယ် page ကိုသွား>\n2. <ဘာကိုနှိပ်>\n3. <ဘာဖြစ်သွားလဲ>\n\nExpected: <ဘာဖြစ်သင့်လဲ>\n\nFull error (copied exactly from Console / terminal):\n<paste here — do not shorten>\n\nScreenshot: <attached>\n\nAlready tried (did not work):\n- <အရင် chat မှာ agent လုပ်ခဲ့တာ>",
+  "badErr": "Save ခလုတ်နှိပ်ရင် error တက်တယ်။ ပြင်ပေးပါ။",
+  "goodErr": "Note edit page မှာ Save နှိပ်ရင် Console မှာ ဒီ error တက်ပါတယ် —",
+  "goodErr2": "TypeError: Cannot read properties of undefined (reading 'id')\n    at saveNote (NoteEditor.tsx:42:18)",
+  "tests": "Write tests for the note search feature (Vitest + React Testing Library).\nCover: matching title, \"no results\" message, empty note list.\nRun the tests and show me the result. Do not change app code\nunless a test reveals a real bug — if so, explain the bug first.",
+  "review": "Before I merge:\n1. Which files did you change?\n2. Why did each change need to happen?\n3. What did you NOT check or test?",
+  "gitignore": "# secrets — never commit\n.env\n.env.*\n!.env.example",
+  "envexample": "# VITE_ prefix = sent to the browser = PUBLIC\nVITE_SUPABASE_URL=\nVITE_SUPABASE_ANON_KEY=\n\n# server-only — never prefix with VITE_\nGEMINI_API_KEY=",
+  "feKey": "// src/ai.ts  (runs in the browser)\nconst key = import.meta.env.VITE_GEMINI_KEY\nfetch(`https://...?key=${key}`)",
+  "beKey": "// browser\nfetch('/api/summarize', { method: 'POST', body })\n\n// server function\nconst key = process.env.GEMINI_API_KEY",
+  "rls": "alter table notes enable row level security;\n\ncreate policy \"Users read own notes\"\n  on notes for select\n  using (auth.uid() = user_id);",
+  "states": "Go through every screen in src/pages. For each one, list whether it\nhandles: loading, error (with a retry), and empty data.\nShow me the list first. Then fix only the missing states,\none screen per commit. Do not change the design or layout.",
+  "git": "git status                 # ဘာတွေ ပြောင်းထားလဲ ကြည့်\ngit pull                   # GitHub က နောက်ဆုံး code ကို ယူ\ngit switch -c fix/search   # branch အသစ် ဖွင့်\ngit add -A                 # ပြောင်းထားတာ အကုန် ရွေး\ngit commit -m \"Add search\" # save point လုပ်\ngit log --oneline          # save point စာရင်း ကြည့်\ngit revert <commit-id>     # commit တစ်ခုကို ပြန်ဖျက်"
+ }
+}

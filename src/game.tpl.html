@@ -1,0 +1,981 @@
+<title>Ship Week</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Pyidaungsu 2.5.3 (MCF), embedded so Burmese renders in it everywhere; Latin falls through to the system face */
+__FONTFACE__
+/* Layout: one 880px column; home is a week board of seven day tiles, play turns the card into a small dev workspace (chat, terminal, diff, console, phone) */
+:root{
+ --bg:#f6f7fb;--surface:#fff;--surface-2:#f1f2f8;--text:#1a1b23;--muted:#5d6172;--faint:#8a8ea0;
+ --line:rgba(22,26,52,.08);--line-strong:rgba(22,26,52,.15);--accent:#4f5bd5;--on-accent:#fff;--tint:rgba(79,91,213,.09);--tint-strong:rgba(79,91,213,.16);
+ --good:#2f7d4f;--good-tint:rgba(47,125,79,.1);--bad:#c2410c;--bad-tint:rgba(194,65,12,.09);--warn:#a8741a;
+ --shadow:0 1px 2px rgba(22,28,70,.04),0 14px 40px -12px rgba(22,28,70,.12);--scrim:rgba(20,22,34,.35);
+ --r-lg:22px;--r-md:16px;--r-sm:11px;
+ --font:"Pyidaungsu",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+ --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Pyidaungsu",monospace;
+ --term-bg:#14151b;--term-tx:#d7d9e4;--term-dim:#7d8094;--term-ok:#7ad69b;--term-err:#ff8a6b;--term-acc:#9aa3f6;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --bg:#14151a;--surface:#1b1c23;--surface-2:#23242d;--text:#e8e9f0;--muted:#a0a3b5;--faint:#757889;
+ --line:rgba(255,255,255,.07);--line-strong:rgba(255,255,255,.13);--accent:#8f98f3;--on-accent:#14151a;--tint:rgba(143,152,243,.1);--tint-strong:rgba(143,152,243,.18);
+ --good:#6cc58f;--good-tint:rgba(108,197,143,.12);--bad:#f0956a;--bad-tint:rgba(240,149,106,.12);--warn:#e0b25c;
+ --shadow:none;--scrim:rgba(0,0,0,.55);--term-bg:#0d0e12;color-scheme:dark}}
+:root[data-theme="dark"]{
+ --bg:#14151a;--surface:#1b1c23;--surface-2:#23242d;--text:#e8e9f0;--muted:#a0a3b5;--faint:#757889;
+ --line:rgba(255,255,255,.07);--line-strong:rgba(255,255,255,.13);--accent:#8f98f3;--on-accent:#14151a;--tint:rgba(143,152,243,.1);--tint-strong:rgba(143,152,243,.18);
+ --good:#6cc58f;--good-tint:rgba(108,197,143,.12);--bad:#f0956a;--bad-tint:rgba(240,149,106,.12);--warn:#e0b25c;
+ --shadow:none;--scrim:rgba(0,0,0,.55);--term-bg:#0d0e12;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:16px/1.8 var(--font);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button,input{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{max-width:880px;margin:0 auto;padding-block:20px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+code,.mono{font-family:var(--mono);font-size:.88em}
+
+/* header + meters */
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:-.01em;background:none;border:0;padding:0;cursor:pointer}
+.brand svg{width:20px;height:20px;color:var(--accent)}
+.meters{display:flex;gap:14px;flex-wrap:wrap}
+.meter{display:grid;grid-template-columns:auto 64px auto;gap:8px;align-items:center;font-size:12.5px;color:var(--muted)}
+.meter .bar{height:6px;border-radius:9px;background:var(--surface-2);overflow:hidden}
+.meter .bar i{display:block;height:100%;border-radius:9px;background:var(--good);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.meter .bar i.mid{background:var(--warn)}.meter .bar i.low{background:var(--bad)}
+.meter b{font:600 12px var(--mono);color:var(--text);font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+
+/* type */
+.eyebrow{font:600 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:0 0 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+h1{font-size:36px;line-height:1.45;letter-spacing:-.025em;font-weight:700;margin:0 0 10px;text-wrap:balance}
+h2{font-size:22px;line-height:1.55;letter-spacing:-.015em;font-weight:700;margin:0 0 6px;text-wrap:balance}
+h3{font-size:16px;margin:0 0 4px}
+.lede{color:var(--muted);font-size:17px;margin:0;max-width:640px}
+.sub{font:700 13.5px var(--font);margin:52px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.sub small{font:500 12px var(--mono);color:var(--faint)}
+p{margin:0 0 12px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line-strong);background:var(--surface);border-radius:12px;padding:10px 18px;font-weight:600;font-size:15px;cursor:pointer;transition:border-color .2s,transform .15s,opacity .2s}
+.btn:hover{border-color:var(--faint)}
+.btn:active{transform:translateY(1px)}
+.btn.pri{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.pri:hover{opacity:.92}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.link{background:none;border:0;color:var(--accent);font-weight:600;cursor:pointer;padding:0}
+
+/* home */
+.hero{padding:40px 0 4px}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-top:28px}
+.day{position:relative;text-align:left;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);padding:14px 12px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:150px;transition:transform .2s,border-color .2s;box-shadow:var(--shadow)}
+.day:hover:not([disabled]){transform:translateY(-2px);border-color:var(--line-strong)}
+.day .dn{font:600 11px var(--mono);color:var(--faint);letter-spacing:.04em;padding-right:16px}
+.day .dw{font-size:14px;font-weight:700;line-height:1.5}
+.day .dp{font-size:12.5px;color:var(--muted);line-height:1.6}
+.day .st{margin-top:auto;display:flex;gap:2px;padding-top:8px}
+.day .st svg{width:14px;height:14px}
+.day.next{border-color:var(--accent);box-shadow:0 0 0 3px var(--tint)}
+.day.next .dn{color:var(--accent)}
+.day[disabled]{cursor:not-allowed;background:var(--surface-2);box-shadow:none;opacity:.7}
+.day .lock{position:absolute;right:10px;top:12px;width:14px;height:14px;color:var(--faint)}
+.star{color:var(--line-strong)}.star.on{color:var(--warn)}
+.cta{margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 22px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);box-shadow:var(--shadow)}
+.cta p{margin:0;color:var(--muted);font-size:14.5px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.cc{text-align:left;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:84px;transition:border-color .2s}
+.cc:hover{border-color:var(--line-strong)}
+.cc b{font-size:14px;line-height:1.5}
+.cc span{font-size:12.5px;color:var(--faint);line-height:1.6}
+.cc .mono{font-size:12.5px;font-weight:600;color:var(--text)}
+.cc.lock{background:var(--surface-2);border-style:dashed;cursor:default}
+.cc.lock b{color:var(--faint)}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;font-size:14.5px;color:var(--muted)}
+.how b{display:block;color:var(--text);margin-bottom:2px}
+footer{margin-top:64px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--faint);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer .sync::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--faint);margin-right:7px;vertical-align:middle}
+footer .sync.cloud::before{background:var(--good)}
+
+/* play shell */
+.phead{display:flex;align-items:center;gap:12px;padding:18px 0 18px}
+.x{width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong);background:var(--surface);cursor:pointer;display:grid;place-items:center;flex:none;color:var(--muted)}
+.x:hover{color:var(--text)}
+.segs{flex:1;display:flex;gap:5px;min-width:0}
+.segs i{flex:1;height:5px;border-radius:9px;background:var(--line-strong)}
+.segs i.done{background:var(--accent)}.segs i.cur{background:var(--text)}
+.phead .tag{font:600 12px var(--mono);color:var(--muted);white-space:nowrap}
+.stage{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);box-shadow:var(--shadow);padding:24px}
+.story{background:var(--surface-2);border-radius:var(--r-md);padding:12px 16px;margin:4px 0 18px;font-size:15px;color:var(--muted)}
+.story b{color:var(--text)}
+.ask{font-weight:700;font-size:16px;margin:18px 0 10px}
+
+/* choices */
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface);padding:11px 14px;cursor:pointer;transition:border-color .15s,background .15s;min-width:0;font-size:15px;line-height:1.7}
+.opt:hover:not([disabled]){border-color:var(--faint)}
+.opt .k{font:600 11px var(--mono);border:1px solid var(--line-strong);border-radius:5px;padding:0 6px;color:var(--faint);margin-top:4px;flex:none}
+.opt.sel{border-color:var(--accent);background:var(--tint)}
+.opt.right{border-color:var(--good);background:var(--good-tint)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-tint)}
+.opt.dim{opacity:.5}
+.opt[disabled]{cursor:default}
+.chk{display:flex;gap:12px;align-items:flex-start;text-align:left;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface);padding:10px 14px;cursor:pointer;font-size:15px;line-height:1.7;width:100%}
+.chk::before{content:"";width:16px;height:16px;border-radius:5px;border:1.5px solid var(--line-strong);flex:none;margin-top:5px;background:var(--surface)}
+.chk.sel{border-color:var(--accent);background:var(--tint)}
+.chk.sel::before{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--surface)}
+.chk.right{border-color:var(--good);background:var(--good-tint)}
+.chk.wrong{border-color:var(--bad);background:var(--bad-tint)}
+.chk.miss{border-style:dashed;border-color:var(--good)}
+.chk[disabled]{cursor:default}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.counter{font:600 12.5px var(--mono);color:var(--muted)}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+
+/* chat */
+.chat{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
+.msg{max-width:88%;padding:9px 14px;border-radius:16px;font-size:15px;line-height:1.75;animation:rise .3s ease both}
+.msg small{display:block;font:600 11px var(--mono);color:var(--faint);margin-bottom:1px}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--on-accent);border-bottom-right-radius:5px}
+.msg.me small{color:inherit;opacity:.7}
+.msg.ag{align-self:flex-start;background:var(--surface-2);border-bottom-left-radius:5px}
+.msg.sys{align-self:center;background:none;border:1px dashed var(--line-strong);font-size:13.5px;color:var(--muted);border-radius:10px}
+.dots span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--faint);margin-right:4px;animation:blink 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes blink{50%{opacity:.25}}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* code + file panes */
+.file{border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;margin:10px 0;background:var(--surface)}
+.file .fh{display:flex;justify-content:space-between;gap:10px;padding:7px 12px;background:var(--surface-2);font:600 12px var(--mono);color:var(--muted);flex-wrap:wrap}
+.file pre{margin:0;padding:12px 14px;font:12.5px/1.75 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text)}
+.copy{font:600 11.5px var(--font);border:1px solid var(--line-strong);background:var(--surface);border-radius:7px;padding:1px 9px;cursor:pointer;color:var(--muted)}
+.copy.done{color:var(--accent);border-color:var(--accent)}
+.pr{border:1px solid var(--line-strong);border-radius:var(--r-md);overflow:hidden;margin-top:10px;animation:rise .35s ease both}
+.pr .ph{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.pr .ph b{font-size:15px}
+.pr .ph span{font:500 12px var(--mono);color:var(--faint)}
+.pr ul{list-style:none;margin:0;padding:8px 16px}
+.pr li{display:flex;justify-content:space-between;gap:10px;font:12.5px/2 var(--mono);border-bottom:1px dashed var(--line)}
+.pr li:last-child{border-bottom:0}
+.pr li em{font-style:normal;white-space:nowrap}
+.add{color:var(--good)}.del{color:var(--bad)}
+.pr .pn{padding:10px 16px;border-top:1px solid var(--line);font-size:14px}
+.pr .pn div{display:flex;gap:8px;margin:2px 0}
+.pr .pn div::before{content:"";width:6px;height:6px;border-radius:50%;margin-top:11px;flex:none;background:var(--bad)}
+.pr .pn div.ok::before{background:var(--good)}
+.pr .pn div.nt::before{background:var(--warn)}
+
+/* prompt composer */
+.slot{margin-top:14px}
+.slot .sl{font:700 12px var(--mono);letter-spacing:.04em;color:var(--accent);margin-bottom:6px}
+.preview{margin-top:16px}
+
+/* terminal */
+.term{background:var(--term-bg);color:var(--term-tx);border-radius:var(--r-md);overflow:hidden;font:13px/1.7 var(--mono);border:1px solid var(--line)}
+.term .tb{display:flex;align-items:center;gap:6px;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.07);color:var(--term-dim);font-size:11.5px}
+.term .tb i{width:10px;height:10px;border-radius:50%;background:#3a3c48}
+.term .tb span{margin-left:8px}
+.term .out{padding:10px 14px;min-height:150px;max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.term .out .c{color:var(--term-tx)}.term .out .c::before{content:"$ ";color:var(--term-acc)}
+.term .out .d{color:var(--term-dim)}.term .out .ok{color:var(--term-ok)}.term .out .er{color:var(--term-err)}
+.term .out .h{color:var(--term-acc)}
+.term .out button.cid{background:none;border:0;padding:0;color:#f0c674;text-decoration:underline dotted;cursor:pointer;font:inherit}
+.term .in{display:flex;align-items:center;gap:8px;padding:8px 14px 10px;border-top:1px solid rgba(255,255,255,.07)}
+.term .in label{color:var(--term-acc);white-space:nowrap;font-size:12px}
+.term .in input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--term-tx);font:13px var(--mono);caret-color:var(--term-acc)}
+.term .in button{background:#2a2c38;border:0;color:var(--term-tx);border-radius:6px;padding:3px 10px;font:600 12px var(--mono);cursor:pointer}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{font:12.5px var(--mono);border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--text)}
+.chip:hover{border-color:var(--faint)}
+.chip.hint{border-color:var(--accent);background:var(--tint);animation:pulse 1.2s ease 2}
+@keyframes pulse{50%{box-shadow:0 0 0 4px var(--tint)}}
+.goals{list-style:none;padding:0;margin:0 0 12px;display:grid;gap:6px}
+.goals li{display:flex;gap:10px;font-size:14.5px;color:var(--muted);align-items:flex-start}
+.goals li::before{content:"";width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-strong);flex:none;margin-top:5px}
+.goals li.cur{color:var(--text);font-weight:600}
+.goals li.cur::before{border-color:var(--accent);background:var(--tint)}
+.goals li.done{color:var(--faint);text-decoration:line-through}
+.goals li.done::before{background:var(--good);border-color:var(--good)}
+.appview{margin-top:12px;border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 14px;font-size:14px;display:flex;gap:10px;align-items:center}
+.appview::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good);flex:none}
+.appview.broken{background:var(--bad-tint);border-color:var(--bad)}
+.appview.broken::before{background:var(--bad)}
+
+/* console + diff (clickable lines) */
+.lines{border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;font:12.5px/1.7 var(--mono);background:var(--surface)}
+.lines .fh{padding:7px 12px;background:var(--surface-2);font-weight:600;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ln{display:flex;gap:10px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;padding:5px 12px;cursor:pointer;font:inherit;color:var(--text);overflow-wrap:anywhere}
+.ln:hover:not([disabled]){background:var(--surface-2)}
+.ln .lv{flex:none;width:44px;color:var(--faint);font-size:11px;padding-top:1px}
+.ln.err{background:var(--bad-tint)}.ln.err .lv{color:var(--bad)}
+.ln.warn .lv{color:var(--warn)}
+.ln.plus{background:var(--good-tint)}.ln.minus{background:var(--bad-tint)}
+.ln .sg{flex:none;width:12px;color:var(--faint)}
+.ln.sel{box-shadow:inset 3px 0 0 var(--accent);background:var(--tint)}
+.ln.flag-ok{box-shadow:inset 3px 0 0 var(--good)}
+.ln.flag-miss{box-shadow:inset 3px 0 0 var(--bad)}
+.ln.flag-false{box-shadow:inset 3px 0 0 var(--warn)}
+.ln[disabled]{cursor:default}
+.diffs{display:grid;gap:10px}
+
+/* sort cards */
+.sort{display:grid;gap:8px}
+.si{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px 8px 14px;background:var(--surface);flex-wrap:wrap}
+.si span{font-size:14.5px;min-width:0}
+.si .seg{display:flex;border:1px solid var(--line-strong);border-radius:9px;overflow:hidden;flex:none}
+.si .seg button{border:0;background:var(--surface);padding:5px 12px;font-size:13px;cursor:pointer;color:var(--muted)}
+.si .seg button+button{border-left:1px solid var(--line-strong)}
+.si .seg button.on{background:var(--text);color:var(--surface)}
+.si.right{border-color:var(--good);background:var(--good-tint)}
+.si.wrong{border-color:var(--bad);background:var(--bad-tint)}
+
+/* npm cards */
+.npms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.npm{border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;background:var(--surface);font-size:13px;display:grid;gap:4px}
+.npm b{font:600 13.5px var(--mono);overflow-wrap:anywhere}
+.npm dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;color:var(--muted)}
+.npm dt{color:var(--faint)}.npm dd{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--text);min-width:0;overflow-wrap:anywhere}
+
+/* email */
+.mail{border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+.mail .mh{padding:10px 14px;background:var(--surface-2);font-size:13px;color:var(--muted)}
+.mail .mh b{color:var(--text)}
+.mail .mb{padding:12px 14px;font-size:14.5px}
+.order{display:grid;gap:8px}
+.order .opt .k{min-width:22px;text-align:center}
+
+/* phone QA */
+.qa{display:grid;grid-template-columns:300px minmax(0,1fr);gap:22px;align-items:start}
+.phone{border:10px solid #1c1d24;border-radius:34px;background:#fff;color:#1a1b23;height:520px;overflow:hidden;display:flex;flex-direction:column;font-family:var(--font);box-shadow:0 0 0 1px var(--line-strong),0 20px 40px -18px rgba(0,0,0,.35)}
+.phone .sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding:0 16px;font:600 11px -apple-system,system-ui,sans-serif;color:#1a1b23}
+.phone .ah{padding:6px 16px 10px;border-bottom:1px solid #ececf2}
+.phone .ah b{font-size:17px}
+.phone .ah small{display:block;font-size:11.5px;color:#8a8ea0}
+.phone .bd{flex:1;overflow:hidden;padding:12px 14px;display:flex;flex-direction:column;gap:8px;position:relative}
+.phone .nt{border:1px solid #ececf2;border-radius:12px;padding:8px 12px;font-size:13px;line-height:1.6}
+.phone .nt b{display:block;font-size:13.5px}
+.phone .nt span{color:#8a8ea0;font-size:11.5px}
+.phone .sk{height:46px;border-radius:12px;background:linear-gradient(90deg,#f0f1f6 25%,#f7f8fb 50%,#f0f1f6 75%);background-size:200% 100%;animation:shim 1.3s infinite}
+@keyframes shim{to{background-position:-200% 0}}
+.phone .spin{width:22px;height:22px;border-radius:50%;border:2.5px solid #e3e4ec;border-top-color:#4f5bd5;animation:spin .8s linear infinite;margin:40px auto 6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.phone .center{text-align:center;color:#5d6172;font-size:13px;line-height:1.7}
+.phone .center b{display:block;color:#1a1b23;font-size:14px}
+.phone .pbtn{display:inline-block;margin-top:8px;background:#4f5bd5;color:#fff;border-radius:9px;padding:6px 14px;font-size:12.5px;font-weight:600}
+.phone .inp{border:1px solid #dcdde6;border-radius:10px;padding:7px 10px;font-size:13px;color:#1a1b23}
+.phone .inp.ph{color:#a0a3b5}
+.phone .tabs{display:flex;border-top:1px solid #ececf2}
+.phone .tabs span{flex:1;text-align:center;font-size:11px;padding:8px 0 10px;color:#8a8ea0}
+.phone .tabs span.on{color:#4f5bd5;font-weight:700}
+.qa .ctl{display:grid;gap:14px}
+.seg2{display:flex;flex-wrap:wrap;gap:6px}
+.seg2 button{border:1px solid var(--line-strong);background:var(--surface);border-radius:9px;padding:5px 12px;font-size:13.5px;cursor:pointer}
+.seg2 button.on{background:var(--text);color:var(--surface);border-color:var(--text)}
+.found{display:grid;gap:6px;font-size:14px}
+.found div{display:flex;gap:8px;align-items:center}
+.found div::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good)}
+
+/* feedback */
+.fb{margin-top:20px;border-top:1px solid var(--line);padding-top:18px;animation:rise .35s cubic-bezier(.2,.8,.2,1)}
+.fb-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.fb-h b{font-size:18px}
+.fb.ok .fb-h b{color:var(--good)}.fb.mid .fb-h b{color:var(--warn)}.fb.no .fb-h b{color:var(--bad)}
+.fx{display:flex;gap:6px;flex-wrap:wrap}
+.fx span{font:600 12px var(--mono);padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.fx span.neg{background:var(--bad-tint);color:var(--bad)}
+.fx span.pos{background:var(--good-tint);color:var(--good)}
+.lesson{border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 16px;margin:10px 0;background:var(--bg)}
+.lesson .lt{display:flex;justify-content:space-between;gap:10px;font:600 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.lesson .lt .okk{color:var(--good)}.lesson .lt .nok{color:var(--bad)}
+.lesson b{display:block;font-size:15.5px;margin:2px 0}
+.lesson p{margin:0;font-size:14.5px;color:var(--muted)}
+.why{font-size:15px;color:var(--muted)}
+.why b{color:var(--text)}
+.why ul{margin:6px 0 0;padding-left:18px}
+.why li{margin-bottom:4px}
+
+/* summary */
+.big{font-size:64px;line-height:1;letter-spacing:-.03em;font-weight:700;margin:6px 0 6px;font-variant-numeric:tabular-nums}
+.stars{display:flex;gap:6px;margin:6px 0 4px}
+.stars svg{width:34px;height:34px;transition:transform .4s cubic-bezier(.34,1.8,.64,1)}
+.stars svg.on{animation:popin .5s cubic-bezier(.34,1.8,.64,1) both}
+@keyframes popin{from{transform:scale(.3);opacity:0}}
+.grade{font-size:96px;line-height:1;font-weight:800;letter-spacing:-.04em;color:var(--accent)}
+.unl{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:8px}
+.unl div{border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;font-size:13.5px;background:var(--surface)}
+.unl div small{display:block;font:500 11px var(--mono);color:var(--faint)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:30;display:grid;place-items:center;padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.sheet{width:100%;max-width:620px;max-height:min(88vh,800px);overflow:auto;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r-lg);padding:22px 24px;position:relative}
+.sheet .x{position:absolute;right:14px;top:14px}
+.sheet h2{padding-right:44px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--text);color:var(--surface);font-size:14px;font-weight:600;padding:9px 16px;border-radius:999px;z-index:40;animation:rise .25s}
+
+@media (max-width:760px){
+ .week{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .day{min-height:118px}
+ .qa{grid-template-columns:minmax(0,1fr)}
+ .phone{max-width:300px;margin:0 auto;width:100%;height:420px}
+ .npms{grid-template-columns:minmax(0,1fr)}
+ .how{grid-template-columns:minmax(0,1fr);gap:12px}
+}
+@media (max-width:560px){
+ h1{font-size:28px}
+ .stage{padding:16px}
+ .grid2{grid-template-columns:minmax(0,1fr)}
+ .meter{grid-template-columns:auto 44px auto}
+ .msg{max-width:94%}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+
+<div class="app">
+ <header class="top">
+  <button class="brand" id="home-link" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6M12 19h8"/></svg>Ship Week</button>
+  <div class="meters" id="meters"></div>
+ </header>
+ <main id="view"></main>
+ <footer><span class="sync" id="sync">ဒီ browser ထဲမှာ သိမ်းထားတယ်</span><span>Prompt · git · review · security · launch</span></footer>
+</div>
+<div id="layer"></div>
+
+<script>
+const D=__DATA__;
+
+/* ---------- small helpers ---------- */
+const $=s=>document.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const STAR='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 16.8l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>';
+const LOCK='<svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2000)}
+function copyText(btn,text){
+ const done=()=>{btn.classList.add('done');const o=btn.textContent;btn.textContent='Copied';setTimeout(()=>{btn.textContent=o;btn.classList.remove('done')},1200)};
+ const sel=()=>{const pre=btn.closest('.file')?.querySelector('pre');if(!pre)return;const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Select လုပ်ထားတယ် — copy ကူးပါ')};
+ try{navigator.clipboard.writeText(text).then(done,sel)}catch(e){sel()}
+}
+const fileBox=(name,code,extra)=>`<div class="file"><div class="fh"><span>${esc(name)}</span>${extra||`<button class="copy" type="button">Copy</button>`}</div><pre>${esc(code)}</pre></div>`;
+function bindCopy(el){$$('.file .copy',el).forEach(b=>b.onclick=()=>copyText(b,b.closest('.file').querySelector('pre').textContent))}
+const msg=(who,name,html)=>`<div class="msg ${who}"><small>${esc(name)}</small>${html}</div>`;
+
+/* ---------- lessons: what each mistake teaches, and the warm-up question that brings it back ---------- */
+const L={
+ 'spec':{t:'v1 မှာ feature ၃–၄ ခုပဲ',why:'ရည်မှန်းချက် မရှင်းရင် agent က ခန့်မှန်းပြီး ရေးသွားတယ်။ v1 ကို ၃–၄ ခုပဲထားပြီး ကျန်တဲ့ အိုင်ဒီယာတွေကို "နောက်မှ" စာရင်းထဲ ရွှေ့ပါ။',
+  q:'App အသစ်အတွက် feature ၉ ခု စဉ်းစားထားတယ်။ v1 မှာ ဘာလုပ်မလဲ?',o:['အရေးကြီးဆုံး ၃–၄ ခုပဲထား၊ ကျန်တာ "နောက်မှ" စာရင်းထဲ','၉ ခုလုံး တစ်ခါတည်း ဆောက်','Agent ကို ကြိုက်တာ ရွေးဆောက်ခိုင်း']},
+ 'stack':{t:'Stack ရွေးပြီးရင် မပြောင်းနဲ့',why:'AI က လူသုံးများတဲ့ နည်းပညာကို ပိုကောင်းကောင်း သိတယ်။ ပြဿနာတက်တိုင်း framework ပြောင်းရင် အစကနေ ပြန်စရသလို ဖြစ်တယ်။ လက်ရှိ stack ထဲမှာပဲ ဖြေရှင်းပါ။',
+  q:'React app မှာ bug တစ်ခု ၂ ရက်ရှိပြီ မပြီးသေးဘူး။ ဘာလုပ်မလဲ?',o:['React ထဲမှာပဲ ဆက်ဖြေရှင်း — chat အသစ်၊ error အပြည့်နဲ့','Vue ကို ပြောင်းလိုက်','Project အသစ် အစကပြန်စ']},
+ 'agents':{t:'AGENTS.md ထဲ rules ထား၊ secret မထည့်',why:'Agent က chat အသစ်တိုင်း AGENTS.md ကို ဖတ်တယ်။ Stack၊ design ပုံစံ၊ မထိရမယ့်အရာတွေ ရေးထားပါ။ Key နဲ့ password ကိုတော့ ဘယ်တော့မှ မထည့်ပါနဲ့ — repo နဲ့အတူ ပါသွားမယ်။',
+  q:'AGENTS.md ထဲမှာ ဘာမထည့်သင့်လဲ?',o:['Supabase service key','Stack: Vite + React + TypeScript (do not change)','Do not touch: supabase/migrations/']},
+ 'onetask':{t:'Prompt တစ်ခု = task တစ်ခု',why:'Task သေးရင် agent က ပိုမှန်မှန်ကန်ကန် လုပ်နိုင်ပြီး ကိုယ်လည်း စစ်ရလွယ်တယ်။ မှားရင်လည်း PR တစ်ခုတည်းကို ပြန်ဖျက်ရုံပဲ။',
+  q:'"Login ထည့်၊ dark mode ထည့်၊ bug တွေလည်း ပြင်ပေး" — ဒီ prompt ရဲ့ ပြဿနာက?',o:['Task ၃ ခု ရောနေတယ်','စာတိုလွန်းတယ်','English နဲ့ မရေးထားဘူး']},
+ 'template':{t:'Goal / Context / Don\'t touch / Verify',why:'ဘာလိုချင်လဲ၊ ဘယ်နေရာမှာလဲ၊ ဘာကို မထိရဘူးလဲ၊ ပြီးရင် ဘယ်လိုစစ်မလဲ — ၄ ပိုင်းလုံး ပါရင် agent ခန့်မှန်းစရာ မလိုတော့ဘူး။',
+  q:'Prompt ထဲက "Verify" အပိုင်းမှာ ဘာရေးရမလဲ?',o:['ဘာလုပ်ရင် ဘာမြင်ရမလဲ — အောင်မြင်တဲ့ အခြေအနေ','"ကောင်းကောင်းလုပ်ပေးပါ"','Agent ကို ကျေးဇူးတင်စကား']},
+ 'report':{t:'ပြီးရင် files / why / not tested ပြောခိုင်း',why:'Prompt အဆုံးမှာ "When done, tell me: files changed, why, and what you did not test." ထည့်ထားရင် agent က ဘာပြောင်းခဲ့လဲ၊ ဘာမစစ်ရသေးလဲ ကိုယ်တိုင် ပြောလာတယ်။',
+  q:'Prompt အဆုံးမှာ ဘာထည့်ရင် အသုံးဝင်ဆုံးလဲ?',o:['When done, tell me: files changed, why, and what you did not test.','Please be fast.','Make it beautiful.']},
+ 'commit':{t:'အလုပ်ဖြစ်တိုင်း commit',why:'Commit က game ကစားရင် save လုပ်သလိုပဲ။ git add -A နဲ့ ရွေး၊ git commit -m "..." နဲ့ သိမ်း။ နောက်ပြောင်းလဲမှုက ပျက်ရင် ဒီ save point ကို ပြန်သွားလို့ရတယ်။',
+  q:'Search feature အလုပ်ဖြစ်သွားပြီ။ နောက် feature မစခင် ဘာလုပ်မလဲ?',o:['git add -A ပြီး git commit -m "Add search"','ဆက်ရေး၊ နောက်မှ commit','git push --force']},
+ 'revert':{t:'ပျက်ရင် git revert <id>',why:'git log --oneline နဲ့ ပျက်စေတဲ့ commit ကို ရှာ၊ git revert <id> နဲ့ အဲ့ commit တစ်ခုတည်းကို ပြန်ဖျက်။ ကောင်းနေတဲ့ commit တွေ မထိဘူး။',
+  q:'Commit b7e2d41 က app ကို ပျက်စေတယ်။ ဘာ run မလဲ?',o:['git revert b7e2d41','git reset --hard','git commit -m "fix"']},
+ 'fresh':{t:'၂–၃ ခါ မရရင် chat အသစ်',why:'Chat ရှည်လာရင် agent က အရင်မှားခဲ့တဲ့ အိုင်ဒီယာတွေကို ဆက်ကိုင်ထားတတ်တယ်။ Chat အသစ်မှာ error အပြည့်၊ screenshot၊ ပြန်ဖြစ်အောင်လုပ်ရတဲ့ အဆင့်တွေနဲ့ ပြန်စပါ။',
+  q:'Agent က bug တစ်ခုကို "ပြင်ပြီးပြီ" ၃ ခါ ပြောပေမဲ့ မပြီးသေးဘူး။',o:['Chat အသစ်ဖွင့်ပြီး bug report အပြည့်နဲ့ ပြန်စ','ဒီ chat ထဲမှာ "ထပ်ပြင်ပေး" လို့ ဆက်ပြော','Framework ပြောင်း']},
+ 'fullerror':{t:'Error ကို အပြည့် paste',why:'Error ကို ကိုယ့်စကားနဲ့ ပြန်မပြောပါနဲ့။ File နာမည်၊ line နံပါတ်၊ error အမျိုးအစားက agent အတွက် အရေးကြီးတဲ့ သဲလွန်စ။ "at saveNote (NoteEditor.tsx:42:18)" ဆိုရင် agent က ဘယ်နေရာလဲ တန်းသိတယ်။',
+  q:'Agent ကို bug ပြောတဲ့အခါ ဘယ်ဟာ အကောင်းဆုံးလဲ?',o:['Console က error နဲ့ "at …(file:line)" line တွေကို ဒီအတိုင်း paste','"Save မှာ error တက်တယ်" လို့ ပြော','"ဘာမှ အလုပ်မလုပ်ဘူး" လို့ ပြော']},
+ 'repro':{t:'Steps to reproduce',why:'ဘယ် page ကိုသွား၊ ဘာကိုနှိပ်၊ ဘာဖြစ်သွားလဲ — အစဉ်လိုက်ရေးထားရင် agent က bug ကို ကိုယ်တိုင် ပြန်ဖြစ်အောင် လုပ်ကြည့်နိုင်တယ်။',
+  q:'Bug report ထဲက "Steps to reproduce" ဆိုတာ?',o:['Bug ပြန်ဖြစ်အောင် လုပ်ရတဲ့ အဆင့်တွေ','Bug ပြင်နည်း','App feature စာရင်း']},
+ 'done':{t:'"ပြီးပါပြီ" ≠ စစ်ပြီးပြီ',why:'Merge မလုပ်ခင် agent ကို ၃ ခုမေးပါ — ဘယ် file တွေ ပြောင်းလဲ၊ ဘာကြောင့်လဲ၊ ဘာမစစ်ရသေးလဲ။ နောက်ဆုံးမေးခွန်းက မစစ်ရသေးတဲ့ အပိုင်းကို ပေါ်လာစေတယ်။',
+  q:'Agent က "Done ✅" ပြောတယ်။ ဘယ်မေးခွန်းက မစစ်ရသေးတဲ့ အပိုင်းကို ပေါ်လာစေလဲ?',o:['What did you NOT check or test?','Are you sure?','Is the code clean?']},
+ 'diff':{t:'Files changed ကို ဖတ်',why:'Code အကုန် နားမလည်ရင်တောင် ဘယ် file တွေ ပြောင်းထားလဲ ကြည့်ပါ။ Task နဲ့ မဆိုင်တဲ့ file (ဥပမာ Login) ပါနေရင် ဘာကြောင့်လဲ မေးပါ။',
+  q:'"Tag filter ထည့်" PR ထဲမှာ src/auth/Login.tsx ကိုပါ ပြောင်းထားတယ်။',o:['ဘာကြောင့် ပြောင်းလဲ မေးပြီးမှ ဆုံးဖြတ်','Agent လုပ်တာဆိုတော့ merge','Login.tsx ကို ကိုယ်တိုင် ဖျက်']},
+ 'package':{t:'Package အသစ် တကယ်ရှိမရှိ စစ်',why:'AI က မရှိတဲ့ package နာမည်ကို လုပ်ကြံပြောတတ်ပြီး အဲ့ဒီနာမည်နဲ့ အန္တရာယ်ရှိတဲ့ package တင်ထားသူတွေ ရှိတယ်။ npmjs.com မှာ weekly downloads၊ နောက်ဆုံး update ရက်၊ GitHub repo ကို ကြည့်ပါ။',
+  q:'Package တစ်ခုက weekly downloads 12၊ ၂ ရက်ကမှ တင်ထား၊ GitHub repo မရှိဘူး။',o:['မထည့်ဘူး — သံသယဖြစ်စရာ','Agent ပြောလို့ ထည့်','အသစ်ဆိုတော့ ကောင်းမှာပဲ']},
+ 'env':{t:'.env ကို GitHub ပေါ် မတင်',why:'Key တွေကို .env ထဲထားပြီး .env ကို .gitignore ထဲ ထည့်ပါ။ တန်ဖိုးမပါတဲ့ .env.example ကိုပဲ commit လုပ်ပါ။',
+  q:'ဘယ် file ကို commit လုပ်သင့်လဲ?',o:['.env.example (တန်ဖိုး ဗလာ)','.env (key အစစ်ပါ)','.env.production (key အစစ်ပါ)']},
+ 'frontend':{t:'Frontend ထဲမှာ ရှိသမျှ public',why:'Browser ထဲ ရောက်တဲ့ code ကို DevTools နဲ့ ဘယ်သူမဆို ကြည့်လို့ရတယ်။ VITE_ နဲ့စတဲ့ variable တွေ browser ထဲ ရောက်တယ်။ ပိုက်ဆံကုန်တဲ့ key ကို server function မှာပဲ ထားပါ။',
+  q:'Gemini API key ကို ဘယ်မှာ ထားမလဲ?',o:['Server function ထဲ (GEMINI_API_KEY)','VITE_GEMINI_KEY အဖြစ် frontend မှာ','React component ထဲ တိုက်ရိုက်']},
+ 'rotate':{t:'Key ပေါက်ရင် rotate',why:'Commit ကို ဖျက်ရုံနဲ့ မလုံလောက်ဘူး — Git history ထဲမှာ ကျန်နေတယ်။ Provider dashboard မှာ အဲ့ key ကို ပိတ်ပြီး key အသစ် ထုတ်ပါ။',
+  q:'API key ကို GitHub ပေါ် တင်မိသွားတယ်။ ပထမဆုံး ဘာလုပ်မလဲ?',o:['Provider မှာ key ကို ပိတ်ပြီး အသစ်ထုတ် (rotate)','Commit ကို ဖျက်လိုက်','Repo ကို private ပြောင်း']},
+ 'rls':{t:'RLS ဖွင့်ပြီး account ၂ ခုနဲ့ စမ်း',why:'Supabase table တိုင်းမှာ RLS ဖွင့်ပြီး "ကိုယ့် row ကိုယ်ပဲ" policy ထားပါ။ Frontend မှာ filter လုပ်ပြီး ဖျောက်တာ လုံခြုံရေး မဟုတ်ဘူး — data က browser ထဲ ရောက်ပြီးသား။',
+  q:'Aung login ဝင်ရင် Mya ရဲ့ note တွေ မြင်နေရတယ်။',o:['RLS ဖွင့်ပြီး policy ထည့်၊ account ၂ ခုနဲ့ ပြန်စမ်း','Frontend မှာ Mya ရဲ့ note ကို filter လုပ်ပြီး ဖျောက်','Mya ကို logout ခိုင်း']},
+ 'states':{t:'Loading / error / empty state',why:'Data ဆွဲနေတုန်း (loading)၊ မှားသွားရင် (error + retry)၊ ဘာမှမရှိရင် (empty) — ၃ မျိုးလုံးမှာ တစ်ခုခု ပြရမယ်။ ဖြူဖြူကြီး screen ကို ဘယ်တော့မှ မပြရ။',
+  q:'User အသစ်မှာ note မရှိသေးလို့ screen ဖြူဖြူကြီးပဲ မြင်ရတယ်။ ဘာ state ပျောက်နေလဲ?',o:['Empty state','Loading state','Error state']},
+ 'preflight':{t:'Launch မလုပ်ခင် ကာကွယ်ချက်',why:'Budget limit/alert၊ error tracking (Sentry)၊ migration မလုပ်ခင် backup၊ preview မှာ အရင်စမ်း — တစ်ခုခုမှားရင် ကိုယ်သိပြီး ထိန်းနိုင်အောင်။',
+  q:'Bug တစ်ခုကြောင့် Gemini API ကို တစ်မိနစ် ထောင်ချီ ခေါ်နေမိတယ်။ ဘာက ကာကွယ်ပေးမလဲ?',o:['Budget limit / spending alert','Dark mode','Commit message ကောင်းကောင်း']}
+};
+
+/* ---------- toolkit (real templates from the guide) and glossary ---------- */
+const TOOLS=[
+ {id:'spec',day:1,name:'docs/spec.md',t:'တစ်မျက်နှာစာ spec',code:D.code.spec},
+ {id:'agents',day:1,name:'AGENTS.md',t:'Agent rules file',code:D.code.agents},
+ {id:'prompt',day:2,name:'task-prompt-template.md',t:'Goal / Context / Don\'t touch / Verify',code:D.code.prompt},
+ {id:'git',day:3,name:'terminal · git basics',t:'Save point command တွေ',code:D.code.git},
+ {id:'bug',day:4,name:'fresh-chat-bug-report.md',t:'Chat အသစ်အတွက် bug report',code:D.code.bug},
+ {id:'review',day:5,name:'prompt · review',t:'Merge မလုပ်ခင် မေးခွန်း ၃ ခု',code:D.code.review},
+ {id:'tests',day:5,name:'prompt · tests',t:'Test ရေးခိုင်းနည်း',code:D.code.tests},
+ {id:'gitignore',day:6,name:'.gitignore',t:'Secret တွေ GitHub မရောက်အောင်',code:D.code.gitignore},
+ {id:'envex',day:6,name:'.env.example',t:'Browser နဲ့ server key ခွဲ',code:D.code.envexample},
+ {id:'rls',day:6,name:'supabase · RLS example',t:'ကိုယ့် note ကိုယ်ပဲ မြင်',code:D.code.rls},
+ {id:'states',day:7,name:'prompt · states audit',t:'Loading / error / empty စစ်ခိုင်း',code:D.code.states}
+];
+const GLOSS_DAY={1:['Frontend','Backend','API'],2:['Branch','PR · Pull Request'],3:['Git','Commit','Terminal'],4:['DevTools Console','DevTools Network'],5:['Test','Dependency · Package'],6:['API key','Environment variable','.env','RLS'],7:['Deploy','Staging · Production']};
+
+/* ---------- progress ---------- */
+const DAY=864e5,INT=[0,1,2,4,8,16],LS='ship-week-v1';
+const blank=()=>({v:1,days:{},lessons:{},updatedAt:0});
+let S=(()=>{try{const t=localStorage.getItem(LS);return t?{...blank(),...JSON.parse(t)}:blank()}catch(e){return blank()}})();
+let remote=null,wT=0,writing=false,dirty=false;
+function persist(){S.updatedAt=Date.now();try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}if(remote){dirty=true;clearTimeout(wT);wT=setTimeout(flush,1500)}}
+function flush(){if(!remote||writing||!dirty)return;writing=true;dirty=false;
+ remote.set({state:JSON.parse(JSON.stringify(S)),updatedAt:S.updatedAt}).catch(e=>{if(e&&['invalid_argument','revoked','not_granted'].includes(e.code)){remote=null;setSync(false)}}).finally(()=>{writing=false;if(dirty)flush()})}
+function setSync(c){const el=$('#sync');el.className='sync'+(c?' cloud':'');el.textContent=c?'Progress ကို account ထဲ သိမ်းထားတယ်':'ဒီ browser ထဲမှာ သိမ်းထားတယ်'}
+async function initSync(){
+ if(!window.claude||!window.claude.use)return;
+ try{const [db,user]=await Promise.all([claude.use('db'),claude.use('user')]);if(!db||!user)return;
+  const uid=await user.id();if(!uid)return;const ref=db.doc('data/users/'+uid+'/progress');const snap=await ref.get();const r=snap.exists?snap.data():null;
+  remote=ref;setSync(true);
+  if(r&&r.state&&(r.state.updatedAt||0)>(S.updatedAt||0)){S={...blank(),...JSON.parse(JSON.stringify(r.state))};try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}if(view==='home')home();meters()}
+  else if(S.updatedAt){dirty=true;flush()}
+ }catch(e){remote=null;setSync(false)}
+}
+function gradeLesson(id,ok){const c={...(S.lessons[id]||{b:0,due:0,r:0,w:0})},now=Date.now();
+ if(ok){c.b=Math.min(5,c.b+1);c.r++;c.due=now+INT[c.b]*DAY-3*36e5}else{c.b=0;c.w++;c.due=now}S.lessons[id]=c}
+const dueLessons=()=>Object.keys(S.lessons).filter(id=>S.lessons[id].due<=Date.now());
+const dayDone=n=>!!(S.days[n]&&S.days[n].done);
+const unlocked=n=>n===1||dayDone(n-1);
+function totals(){let h=100,s=100,b=50;for(const k in S.days){const f=S.days[k].fx||{};h+=f.h||0;s+=f.s||0;b+=f.b||0}return {h:clamp(h,0,100),s:clamp(s,0,100),b:Math.max(0,b)}}
+function meters(){const t=totals();
+ const m=(label,v,max,fmt)=>{const p=v/max*100;return `<div class="meter"><span>${label}</span><div class="bar"><i class="${p<40?'low':p<70?'mid':''}" style="width:${p}%"></i></div><b>${fmt(v)}</b></div>`};
+ $('#meters').innerHTML=m('App health',t.h,100,v=>v)+m('Security',t.s,100,v=>v)+m('Budget',t.b,50,v=>'$'+v);
+}
+
+/* ---------- days ---------- */
+const DAYS=[
+ {n:1,w:'တနင်္လာ',phase:'Plan',title:'ဘာဆောက်မလဲ အရင်ရှင်း',story:'Study Notes ကို ဒီတစ်ပတ်အတွင်း launch လုပ်ရမယ်။ Agent ကို code မရေးခိုင်းခင် ဘာဆောက်မလဲ ကိုယ်တိုင် အရင်ရှင်းထားပါ။',steps:()=>[stepSpec,stepStack,stepAgents]},
+ {n:2,w:'အင်္ဂါ',phase:'Prompt',title:'Agent ကို ခိုင်းနည်း',story:'ဒီနေ့ feature တွေ စထည့်မယ်။ Prompt ကောင်းရင် PR သေးပြီး သန့်တယ်၊ မကောင်းရင် agent က ခန့်မှန်းပြီး ကြိုက်သလို ပြင်သွားတယ်။',steps:()=>shuffle(TASKS).slice(0,2).map(t=>(el,done)=>stepPrompt(el,done,t))},
+ {n:3,w:'ဗုဒ္ဓဟူး',phase:'Save points',title:'Commit နဲ့ revert',story:'Search feature အလုပ်ဖြစ်သွားပြီ။ ဒါပေမဲ့ save point တစ်ခုမှ မလုပ်ရသေးဘူး…',steps:()=>{const T=newTerm();return [(el,d)=>stepCommit(el,d,T),(el,d)=>stepRevert(el,d,T)]}},
+ {n:4,w:'ကြာသပတေး',phase:'Debug',title:'Agent ပြင်မရတဲ့ bug',story:'Note save လုပ်ရင် error တက်နေတယ်။ Agent က "ပြင်ပြီးပါပြီ" လို့ ၂ ခါ ပြောပြီးပြီ…',steps:()=>[stepFresh,stepConsole,stepRepro]},
+ {n:5,w:'သောကြာ',phase:'Review',title:'"Done ✅" ကို စစ်',story:'Agent က tag filter PR ကို "Done ✅" နဲ့ ပို့လာတယ်။ Merge မလုပ်ခင် ကိုယ်တိုင် စစ်ရမယ်။',steps:()=>[stepDiff,stepAskMerge]},
+ {n:6,w:'စနေ',phase:'Security',title:'Key၊ data၊ package',story:'App အလုပ်ဖြစ်နေတာနဲ့ လုံခြုံပြီလို့ မဆိုလိုဘူး။ ဒီနေ့ key ပေါက်တာ၊ data ပေါက်တာ၊ package အတုတွေကို ကိုင်တွယ်ရမယ်။',steps:()=>[stepSort,stepIncident,stepNpm,stepRls]},
+ {n:7,w:'တနင်္ဂနွေ',phase:'Launch',title:'Launch day',story:'ဒီနေ့ launch လုပ်မယ်။ လူတကယ် မသုံးခင် app ကို ကိုယ်တိုင် စမ်းပြီး ကာကွယ်ချက်တွေ ထားရမယ်။',steps:()=>[stepQA,stepPreflight]}
+];
+
+/* ---------- engine ---------- */
+let view='home',RUN=null;
+function playDay(n){const d=DAYS[n-1];RUN={n,steps:d.steps(),i:0,res:[]};view='play';renderStep();window.scrollTo(0,0)}
+function renderStep(){
+ const d=DAYS[RUN.n-1];
+ $('#view').innerHTML=`<div class="phead"><button class="x" id="quit" type="button" aria-label="ထွက်မယ်">✕</button><div class="segs">${RUN.steps.map((_,i)=>`<i class="${i<RUN.i?'done':i===RUN.i?'cur':''}"></i>`).join('')}</div><span class="tag">Day ${d.n} · ${d.phase}</span></div>
+ <div class="stage" id="stage"><div id="sbody"></div></div>`;
+ $('#quit').onclick=()=>{RUN=null;home()};
+ RUN.steps[RUN.i]($('#sbody'),finishStep);
+}
+function fxChips(fx){const out=[];
+ if(fx.h)out.push(`<span class="${fx.h<0?'neg':'pos'}">App health ${fx.h>0?'+':''}${fx.h}</span>`);
+ if(fx.s)out.push(`<span class="${fx.s<0?'neg':'pos'}">Security ${fx.s>0?'+':''}${fx.s}</span>`);
+ if(fx.b)out.push(`<span class="${fx.b<0?'neg':'pos'}">Budget ${fx.b>0?'+$':'-$'}${Math.abs(fx.b)}</span>`);
+ return out.length?`<div class="fx">${out.join('')}</div>`:'<div class="fx"><span class="pos">ထိခိုက်မှု မရှိ</span></div>'}
+function lessonBox(id,ok){const l=L[id];return `<div class="lesson"><div class="lt"><span>သင်ခန်းစာ</span><span class="${ok?'okk':'nok'}">${ok?'မှန်တယ်':'ပြန်လာမယ်'}</span></div><b>${esc(l.t)}</b><p>${esc(l.why)}</p></div>`}
+function finishStep(r){
+ r.fx=r.fx||{};r.lessons=r.lessons||[];RUN.res.push(r);
+ r.lessons.forEach(x=>gradeLesson(x.id,x.ok));persist();
+ const cls=r.score>=.9?'ok':r.score>=.5?'mid':'no';
+ const el=document.createElement('div');el.className='fb '+cls;
+ el.innerHTML=`<div class="fb-h"><b>${esc(r.head||(cls==='ok'?'ကောင်းတယ်':cls==='mid'?'တစ်ဝက်တစ်ပျက်':'မှားသွားတယ်'))}</b>${fxChips(r.fx)}</div>${r.body?`<div class="why">${r.body}</div>`:''}${r.lessons.map(x=>lessonBox(x.id,x.ok)).join('')}
+ <div class="row end" style="margin-top:14px"><button class="btn pri" id="next" type="button">${RUN.i+1<RUN.steps.length?'ဆက်သွားမယ် →':'ဒီနေ့ ပြီးပြီ →'}</button></div>`;
+ $('#stage').appendChild(el);bindCopy(el);
+ $('#next').onclick=()=>{RUN.i++;if(RUN.i<RUN.steps.length){renderStep();$('#stage').scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'})}else endDay()};
+ el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'});
+}
+function endDay(){
+ const n=RUN.n,d=DAYS[n-1],res=RUN.res;
+ const avg=res.reduce((a,r)=>a+r.score,0)/res.length,stars=avg>=.9?3:avg>=.6?2:1;
+ const fx={h:0,s:0,b:0};res.forEach(r=>{fx.h+=r.fx.h||0;fx.s+=r.fx.s||0;fx.b+=r.fx.b||0});
+ const prev=S.days[n]||{},first=!prev.done;
+ S.days[n]={done:true,stars:Math.max(prev.stars||0,stars),last:stars,fx,miss:[...new Set(res.flatMap(r=>r.lessons.filter(x=>!x.ok).map(x=>x.id)))]};
+ persist();meters();
+ if(n===7){launch(first);return}
+ const tools=TOOLS.filter(t=>t.day===n),gl=GLOSS_DAY[n]||[];
+ view='summary';RUN=null;
+ $('#view').innerHTML=`<section class="hero"><p class="eyebrow">Day ${n} · ${esc(d.w)} · ${d.phase} · ပြီးပြီ</p>
+ <div class="stars">${[1,2,3].map(i=>`<span class="star ${i<=stars?'on':''}" style="animation-delay:${i*.15}s">${STAR.replace('<svg','<svg class="'+(i<=stars?'on':'')+'" style="animation-delay:'+i*.18+'s"')}</span>`).join('')}</div>
+ <h1>${stars===3?'ကောင်းကောင်း ပြီးသွားပြီ':stars===2?'ပြီးပြီ — ပိုကောင်းနိုင်သေးတယ်':'ပြီးပြီ — ပြန်ကစားရင် ပိုကောင်းမယ်'}</h1>
+ <p class="lede">${fx.h||fx.s||fx.b?'ဒီနေ့ ဆုံးဖြတ်ချက်တွေကြောင့် app အခြေအနေ ပြောင်းသွားတယ်။':'ဒီနေ့ app ကို ဘာမှ မထိခိုက်ခဲ့ဘူး။'} မှားခဲ့တဲ့ သင်ခန်းစာတွေက warm-up ထဲမှာ ပြန်လာမယ်။</p>
+ <div style="margin-top:14px">${fxChips(fx)}</div></section>
+ <div class="sub">ရလိုက်တာတွေ <small>Toolkit ${tools.length} · ဝေါဟာရ ${gl.length}</small></div>
+ <div class="unl">${tools.map(t=>`<div><small>Toolkit</small>${esc(t.name)}</div>`).join('')}${gl.map(g=>`<div><small>ဝေါဟာရ</small>${esc(g)}</div>`).join('')}</div>
+ <div class="row" style="margin-top:28px">${n<7?`<button class="btn pri" id="go-next" type="button">Day ${n+1} · ${DAYS[n].phase} →</button>`:''}<button class="btn" id="again" type="button">ပြန်ကစားမယ်</button><button class="btn" id="tohome" type="button">Week board</button></div>`;
+ if($('#go-next'))$('#go-next').onclick=()=>playDay(n+1);
+ $('#again').onclick=()=>playDay(n);$('#tohome').onclick=home;window.scrollTo(0,0);
+}
+
+/* ===== Day 1 · Plan ===== */
+function stepSpec(el,done){
+ const IDEAS=shuffle([{t:'Note အသစ်ရေး / ပြင် / ဖျက်',c:1},{t:'Title နဲ့ ရှာဖွေ',c:1},{t:'Tag တပ်',c:1},{t:'Login (ကိုယ့် note ကိုယ်ပဲ မြင်)',c:1},{t:'အသံဖမ်းပြီး note လုပ်',c:0},{t:'သူငယ်ချင်းတွေနဲ့ share',c:0},{t:'Gemini နဲ့ AI အနှစ်ချုပ်',c:0},{t:'Theme ၅ မျိုး',c:0},{t:'Offline sync',c:0},{t:'Note အောက်မှာ comment',c:0}]);
+ const sel=new Set();
+ el.innerHTML=`<p class="eyebrow">Step 1 · docs/spec.md</p><h2>v1 မှာ ဘာ feature တွေ ပါမလဲ?</h2>
+ <div class="story">အိုင်ဒီယာ ၁၀ ခု ရှိတယ်။ <b>v1 အတွက် ၃–၄ ခုပဲ</b> ရွေးပါ — ကျန်တာ "နောက်မှ" စာရင်းထဲ သွားမယ်။</div>
+ <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="ask" style="margin:0">v1 feature</span><span class="counter" id="cnt">0 / 4</span></div>
+ <div class="grid2" id="ideas">${IDEAS.map((x,i)=>`<button class="chk" type="button" data-i="${i}">${esc(x.t)}</button>`).join('')}</div>
+ <div class="row end" style="margin-top:16px"><button class="btn pri" id="go" type="button" disabled>Spec သိမ်းမယ်</button></div>`;
+ $$('#ideas .chk',el).forEach(b=>b.onclick=()=>{const i=+b.dataset.i;
+  if(sel.has(i))sel.delete(i);else{if(sel.size>=4){b.classList.add('shake');setTimeout(()=>b.classList.remove('shake'),400);toast('v1 မှာ ၄ ခုထက် မပိုရဘူး');return}sel.add(i)}
+  b.classList.toggle('sel',sel.has(i));$('#cnt').textContent=sel.size+' / 4';$('#go').disabled=sel.size<3});
+ $('#go').onclick=()=>{
+  const pick=[...sel].map(i=>IDEAS[i]),core=pick.filter(x=>x.c).length,extra=pick.filter(x=>!x.c);
+  $$('#ideas .chk',el).forEach(b=>{const x=IDEAS[+b.dataset.i];b.disabled=true;if(sel.has(+b.dataset.i))b.classList.add(x.c?'right':'wrong');else if(x.c)b.classList.add('miss')});$('#go').disabled=true;
+  const score=clamp(Math.min(1,core/3)-extra.length*.3,0,1),ok=!extra.length&&core>=3;
+  const spec=`# Study Notes — Spec (v1)\n\n## What\nစာကျက်ရင်း မှတ်စုတိုတွေ ရေးပြီး ပြန်ရှာလို့ရတဲ့ web app\n\n## Who\nအတန်း၊ စာအုပ်တွေကနေ မှတ်စုလုပ်ချင်တဲ့ ကျောင်းသား (ဖုန်းနဲ့ အဓိက သုံးမယ်)\n\n## v1 features (3–4 only)\n${pick.map((x,i)=>`${i+1}. ${x.t}`).join('\n')}\n\n## Later (not v1)\n${IDEAS.filter((_,i)=>!sel.has(i)).map(x=>'- '+x.t).join('\n')}`;
+  done({score,fx:{h:-6*extra.length},lessons:[{id:'spec',ok}],head:ok?'Spec ရှင်းတယ်':'v1 က ကြီးနေတယ်',
+   body:(extra.length?`<p>${extra.map(x=>'<b>'+esc(x.t)+'</b>').join('၊ ')} က app ရဲ့ အဓိက အလုပ် (မှတ်စုရေး၊ ရှာ) မဟုတ်ဘူး — v1 ထဲထည့်ရင် ဆောက်ရ စစ်ရတာ များပြီး bug ပိုများတယ်။</p>`:'<p>အဓိက ၄ ခုကိုပဲ ထားပြီး ကျန်တာကို နောက်မှ ဆိုတော့ agent ကို ရှင်းရှင်း ခိုင်းလို့ရပြီ။</p>')+fileBox('docs/spec.md',spec)});
+ };
+}
+function stepStack(el,done){
+ const O=shuffle([{k:'stay',t:'Vite + React + TypeScript နဲ့ပဲ ဆက်သွား — ပြဿနာကို ဒီ stack ထဲမှာ ဖြေရှင်း'},{k:'switch',t:'Svelte ကို ပြောင်းလိုက် — ပိုမြန်တယ်ဆိုတော့'},{k:'agent',t:'Agent ကို "အကောင်းဆုံး framework ရွေးပြီး ပြောင်းပေး" လို့ ခိုင်း'}]);
+ el.innerHTML=`<p class="eyebrow">Step 2 · Stack</p><h2>Stack ပြောင်းမလား?</h2>
+ <div class="chat">${msg('ag','Agent','Vite + React + TypeScript နဲ့ project ဆောက်ပြီးပါပြီ။ Note list က hot reload မှာ နည်းနည်း နှေးနေပါတယ်။')}${msg('ag','သူငယ်ချင်း ကိုဇော်','ဟေ့ React က အခုခေတ်မစားတော့ဘူး၊ Svelte ပြောင်းလိုက်ပါလား။ ငါ့ project ပြောင်းလိုက်တာ ပိုမြန်သွားတယ်။')}</div>
+ <p class="ask">ဘာလုပ်မလဲ?</p><div class="opts" id="o">${O.map((x,i)=>`<button class="opt" type="button" data-k="${x.k}"><span class="k">${i+1}</span><span>${esc(x.t)}</span></button>`).join('')}</div>`;
+ $$('#o .opt',el).forEach(b=>b.onclick=()=>{const k=b.dataset.k,ok=k==='stay';$$('#o .opt',el).forEach(x=>{x.disabled=true;x.classList.add(x.dataset.k==='stay'?'right':x===b?'wrong':'dim')});
+  done({score:ok?1:0,fx:{h:ok?0:k==='switch'?-15:-10},lessons:[{id:'stack',ok}],head:ok?'Stack ကို ကိုင်ထားတယ်':'အစကနေ ပြန်စရပြီ',
+   body:ok?'<p>Hot reload နှေးတာက သေးသေးလေး ပြဿနာ — framework ပြောင်းစရာ မလိုဘူး။</p>':k==='switch'?'<p>Svelte ပြောင်းလိုက်တော့ ဆောက်ပြီးသား component အကုန် ပြန်ရေးရတယ်။ ပြဿနာက framework မဟုတ်ဘဲ note list ထဲက code တစ်နေရာပဲ ဖြစ်တယ်။</p>':'<p>Agent က framework ကို ပြောင်းဖို့ file အများကြီး ပြန်ရေးသွားတယ်။ Stack လို အရေးကြီးတဲ့ ဆုံးဖြတ်ချက်ကို agent လက်ထဲ မထားပါနဲ့။</p>'})});
+}
+function stepAgents(el,done){
+ const LN=shuffle([{t:'Stack (do not change): Vite + React + TypeScript, Supabase',g:1},{t:'Design: one accent color #4f5bd5, no gradients, Burmese text: Pyidaungsu',g:1},{t:'Never put API keys or secrets in code. Use .env.',g:1},{t:'Do not touch: supabase/migrations/ (ask first), .env',g:1},{t:'At the end, list: files changed, why, and what you did NOT test.',g:1},{t:'SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6…',g:0,sec:1,why:'Secret key — AGENTS.md က repo ထဲ commit ဖြစ်မှာမို့ key ပေါက်သွားမယ်'},{t:'Make my app the best app ever.',g:0,why:'မရှင်းဘူး — agent က ဘာလုပ်ရမလဲ ခန့်မှန်းရမယ်'},{t:'Feel free to rewrite any code you think is messy.',g:0,why:'အလုပ်ဖြစ်နေတဲ့ code ကို ပြန်ရေးခွင့်ပေးတာ — အန္တရာယ်ရှိတယ်'}]);
+ const sel=new Set();
+ el.innerHTML=`<p class="eyebrow">Step 3 · AGENTS.md</p><h2>Agent rules file မှာ ဘာထည့်မလဲ?</h2>
+ <div class="story">Agent က chat အသစ်တိုင်း ဒီ file ကို ဖတ်မယ်။ <b>ထည့်သင့်တဲ့ line တွေ</b>ကိုပဲ ရွေးပါ။</div>
+ <div class="opts" id="o">${LN.map((x,i)=>`<button class="chk mono" type="button" data-i="${i}" style="font-size:13.5px">${esc(x.t)}</button>`).join('')}</div>
+ <div class="row end" style="margin-top:16px"><button class="btn pri" id="go" type="button" disabled>AGENTS.md သိမ်းမယ်</button></div>`;
+ $$('#o .chk',el).forEach(b=>b.onclick=()=>{const i=+b.dataset.i;sel.has(i)?sel.delete(i):sel.add(i);b.classList.toggle('sel',sel.has(i));$('#go').disabled=!sel.size});
+ $('#go').onclick=()=>{
+  const p=[...sel].map(i=>LN[i]),good=p.filter(x=>x.g).length,bad=p.filter(x=>!x.g),secret=bad.some(x=>x.sec);
+  $$('#o .chk',el).forEach(b=>{const x=LN[+b.dataset.i];b.disabled=true;if(sel.has(+b.dataset.i))b.classList.add(x.g?'right':'wrong');else if(x.g)b.classList.add('miss')});$('#go').disabled=true;
+  const ok=good>=4&&!bad.length,score=clamp((good-bad.length*1.5)/5,0,1);
+  const md='# Agent rules — Study Notes\n\n'+p.map(x=>'- '+x.t).join('\n');
+  done({score,fx:{s:secret?-20:0,h:bad.filter(x=>!x.sec).length*-5},lessons:[{id:'agents',ok}],head:ok?'Agent rules ရှင်းတယ်':secret?'Secret key ကို repo ထဲ ထည့်မိပြီ':'Rules ထဲမှာ ပြဿနာ ရှိတယ်',
+   body:(bad.length?`<ul>${bad.map(x=>`<li><code>${esc(x.t.slice(0,40))}…</code> — ${esc(x.why)}</li>`).join('')}</ul>`:'')+(good<5?`<p>မရွေးခဲ့တဲ့ အသုံးဝင်တဲ့ line တွေကို အစိမ်းအစက်ကျိုးနဲ့ ပြထားတယ်။</p>`:'')+fileBox('AGENTS.md',md)});
+ };
+}
+
+/* ===== Day 2 · Prompt composer ===== */
+const TASKS=[
+ {name:'Search box',want:'Note list မှာ title နဲ့ ရှာလို့ရအောင်',pr:'Add title search to notes list',files:[['src/pages/NotesList.tsx',18,2],['src/components/SearchBox.tsx',28,0]],untested:'Note ၁၀၀၀ ကျော်ရင် မြန်မမြန်',
+  goal:[{t:'Note list မှာ title နဲ့ ရှာလို့ရတဲ့ search box ထည့်ပါ။',g:1},{t:'App ကို ပိုကောင်းအောင် လုပ်ပေးပါ။',k:'vague',bad:'"ပိုကောင်း" ကို agent က ခန့်မှန်းပြီး အရောင်တွေ၊ layout တွေပါ ပြောင်းသွားတယ်',f:[['src/styles/theme.css',64,40]],h:-10},{t:'Search box ထည့်၊ dark mode ထည့်၊ login bug လည်း ပြင်ပေး။',k:'multi',bad:'Task ၃ ခု တစ်ခါတည်း — PR ကြီးထဲမှာ login ပျက်သွားပြီး ဘယ်ကပျက်လဲ ရှာရခက်တယ်',f:[['src/auth/Login.tsx',41,37],['src/styles/dark.css',120,0]],h:-15}],
+  ctx:[{t:'src/pages/NotesList.tsx — note data က useNotes() hook ကလာတယ်။',g:1},{t:'ဘယ်နေရာ ထည့်ရမလဲ ကိုယ်တိုင် ရှာကြည့်ပါ။',bad:'Agent က Home page မှာ ထည့်ပြီး note data ကို fetch ထပ်ရေးတယ် — data က ၂ နေရာက လာနေပြီ',f:[['src/pages/Home.tsx',35,4],['src/lib/fetchNotes.ts',40,0]],h:-8},{t:'Codebase တစ်ခုလုံး ပြန်ကြည့်ပြီး လိုသလို ပြင်ပါ။',bad:'"လိုသလိုပြင်" ဆိုတော့ မဆိုင်တဲ့ hook တွေကိုပါ refactor လုပ်သွားတယ်',f:[['src/hooks/useNotes.ts',52,48],['src/App.tsx',20,18]],h:-10}],
+  dont:[{t:'Routing၊ Supabase schema၊ တခြား page တွေ။',g:1},{t:'(မထည့်ဘူး)',bad:'နယ်နိမိတ် မရှိလို့ search အတွက် database မှာ column အသစ် ထည့်သွားတယ်',f:[['supabase/migrations/0007_search.sql',12,0]],h:-8,s:-5},{t:'ဘာ file မှ မထိနဲ့။',bad:'ဘာမှ မထိရဆိုတော့ agent က ဘာလုပ်ရမလဲ မသိဘဲ မေးခွန်းပြန်မေးနေတယ်',f:[],h:-3}],
+  ver:[{t:'"သင်္ချာ" လို့ ရိုက်ရင် ကိုက်တဲ့ note တွေပဲ ပြရမယ်။ မတွေ့ရင် "မတွေ့ပါ" ပြရမယ်။',g:1},{t:'အလုပ်ဖြစ်ရင် ပြီးပြီ။',bad:'"အလုပ်ဖြစ်" ကို agent ကိုယ်တိုင် ဆုံးဖြတ်တယ် — မတွေ့တဲ့အခါ screen ဗလာဖြစ်နေတာ မစစ်ခဲ့ဘူး',f:[],h:-6},{t:'(မထည့်ဘူး)',bad:'စစ်နည်း မပါလို့ agent က "Done ✅" ပဲ ပြောတယ် — ဘာစစ်ခဲ့လဲ မသိရဘူး',f:[],h:-6}]},
+ {name:'Delete confirm',want:'Note ဖျက်ခါနီး "တကယ်ဖျက်မလား?" မေးအောင်',pr:'Confirm before deleting a note',files:[['src/components/NoteCard.tsx',14,3],['src/components/ConfirmDialog.tsx',36,0]],untested:'Keyboard Esc နဲ့ ပိတ်တာ',
+  goal:[{t:'Note ဖျက်တဲ့အခါ "တကယ်ဖျက်မလား?" confirm dialog ပြပါ။',g:1},{t:'ဖျက်တဲ့ အပိုင်းကို ပိုကောင်းအောင် လုပ်ပါ။',k:'vague',bad:'"ပိုကောင်း" ဆိုတော့ agent က ဖျက်ထားတာတွေကို trash bin feature အပြည့် ဆောက်သွားတယ်',f:[['src/pages/Trash.tsx',140,0],['supabase/migrations/0008_trash.sql',20,0]],h:-10},{t:'Confirm dialog ထည့်၊ trash bin ဆောက်၊ UI ပါ ပြန်ဒီဇိုင်းဆွဲ။',k:'multi',bad:'Task ၃ ခု — UI redesign ကြောင့် တခြား page တွေ layout ပျက်သွားတယ်',f:[['src/styles/theme.css',210,180],['src/pages/Trash.tsx',140,0]],h:-15}],
+  ctx:[{t:'src/components/NoteCard.tsx ထဲက Delete ခလုတ် — deleteNote() ကို ခေါ်တယ်။',g:1},{t:'Delete ခလုတ် ဘယ်မှာလဲ ရှာကြည့်ပါ။',bad:'Agent က Settings ထဲက "Delete account" ခလုတ်ကို ပြင်သွားတယ်',f:[['src/pages/Settings.tsx',22,5]],h:-10},{t:'App ထဲက delete လုပ်တဲ့ နေရာအားလုံး။',bad:'Tag ဖျက်တာ၊ account ဖျက်တာ အကုန် dialog ပေါ်လာလို့ သုံးရ ရှုပ်သွားတယ်',f:[['src/components/TagChip.tsx',12,2],['src/pages/Settings.tsx',22,5]],h:-6}],
+  dont:[{t:'Supabase schema၊ note list layout၊ တခြား component တွေ။',g:1},{t:'(မထည့်ဘူး)',bad:'Dialog ပုံစံ ညီအောင်ဆိုပြီး Button component ကို ပြန်ရေးလို့ app တစ်ခုလုံးက ခလုတ်တွေ ပြောင်းသွားတယ်',f:[['src/components/Button.tsx',48,40]],h:-8},{t:'ဘာ file မှ မထိနဲ့။',bad:'ဘာမှ မထိရဆိုတော့ agent က ဘာလုပ်ရမလဲ မသိဘဲ မေးခွန်းပြန်မေးနေတယ်',f:[],h:-3}],
+  ver:[{t:'Delete နှိပ်ရင် dialog ပေါ်ရမယ်။ Cancel ဆို note ကျန်ရမယ်၊ Delete ဆို list ထဲက ပျောက်ရမယ်။',g:1},{t:'အလုပ်ဖြစ်ရင် ပြီးပြီ။',bad:'Cancel နှိပ်ရင်လည်း note ပျက်သွားတာကို agent မစစ်ခဲ့ဘူး',f:[],h:-8},{t:'(မထည့်ဘူး)',bad:'စစ်နည်း မပါလို့ agent က "Done ✅" ပဲ ပြောတယ် — ဘာစစ်ခဲ့လဲ မသိရဘူး',f:[],h:-6}]},
+ {name:'Tag filter',want:'Tag နှိပ်ရင် အဲ့ tag ပါတဲ့ note တွေပဲ ပြအောင်',pr:'Filter notes by tag',files:[['src/pages/NotesList.tsx',22,4],['src/components/TagFilter.tsx',31,0]],untested:'Tag ၅၀ ကျော်ရင် chip တွေ ဘယ်လိုပြမလဲ',
+  goal:[{t:'Note list အပေါ်မှာ tag chip တွေ ပြပြီး နှိပ်ရင် အဲ့ tag ပါတဲ့ note ပဲ ပြပါ။',g:1},{t:'Tag တွေကို မိုက်အောင် လုပ်ပေး။',k:'vague',bad:'"မိုက်" ဆိုတော့ agent က tag တွေကို animation နဲ့ အရောင် ၁၂ မျိုး ထည့်သွားတယ် — filter လုပ်လို့ မရသေးဘူး',f:[['src/styles/tags.css',96,0]],h:-10},{t:'Tag filter၊ tag အရောင်ရွေး၊ AI နဲ့ tag အလိုအလျောက်တပ် — အကုန်ထည့်။',k:'multi',bad:'AI auto-tag အတွက် Gemini key ကို frontend မှာ ထည့်သွားတယ်',f:[['src/lib/ai.ts',44,0],['src/components/ColorPicker.tsx',88,0]],h:-12,s:-10}],
+  ctx:[{t:'src/pages/NotesList.tsx — note.tags က string[]။',g:1},{t:'Tag အကြောင်း ကိုယ်တိုင် ရှာကြည့်။',bad:'Agent က tags ကို comma-separated string လို့ ထင်ပြီး data ပုံစံ ပြောင်းသွားတယ်',f:[['src/hooks/useNotes.ts',30,22]],h:-10},{t:'App တစ်ခုလုံး လိုသလို ပြင်။',bad:'မဆိုင်တဲ့ editor page ကိုပါ refactor လုပ်သွားတယ်',f:[['src/pages/NoteEditor.tsx',60,55]],h:-8}],
+  dont:[{t:'Note editor၊ Supabase schema၊ routing။',g:1},{t:'(မထည့်ဘူး)',bad:'Tag ကို table သီးသန့် ခွဲမယ်ဆိုပြီး migration အသစ် ရေးသွားတယ်',f:[['supabase/migrations/0009_tags.sql',34,0]],h:-8,s:-5},{t:'ဘာ file မှ မထိနဲ့။',bad:'ဘာမှ မထိရဆိုတော့ agent က ဘာလုပ်ရမလဲ မသိဘဲ မေးခွန်းပြန်မေးနေတယ်',f:[],h:-3}],
+  ver:[{t:'"math" tag နှိပ်ရင် အဲ့ tag ပါတဲ့ note ၂ ခုပဲ ပြရမယ်။ ထပ်နှိပ်ရင် အကုန် ပြန်ပြရမယ်။',g:1},{t:'အလုပ်ဖြစ်ရင် ပြီးပြီ။',bad:'Tag ကို ပြန်ဖြုတ်လို့ မရတာကို agent မစစ်ခဲ့ဘူး',f:[],h:-6},{t:'(မထည့်ဘူး)',bad:'စစ်နည်း မပါလို့ agent က "Done ✅" ပဲ ပြောတယ် — ဘာစစ်ခဲ့လဲ မသိရဘူး',f:[],h:-6}]}
+];
+function stepPrompt(el,done,T){
+ const SL=[['goal','Goal'],['ctx','Context'],['dont',"Don't touch"],['ver','Verify']];
+ const opts={};SL.forEach(([k])=>opts[k]=shuffle(T[k]));
+ const pick={};let report=false;
+ const idx=RUN.i+1;
+ el.innerHTML=`<p class="eyebrow">Task ${idx} · ${esc(T.name)}</p><h2>${esc(T.want)} — agent ကို prompt ရေးပါ</h2>
+ <div class="story">အပိုင်း ၄ ခုစီမှာ တစ်ခုစီ ရွေးပါ။ ကောင်းတာ၊ မရှင်းတာ၊ ကျယ်လွန်းတာ ရောထားတယ်။</div>
+ ${SL.map(([k,lab])=>`<div class="slot"><div class="sl">${lab}:</div><div class="opts" data-s="${k}">${opts[k].map((o,i)=>`<button class="opt" type="button" data-i="${i}"><span>${esc(o.t)}</span></button>`).join('')}</div></div>`).join('')}
+ <div class="slot"><button class="chk" id="rep" type="button">အဆုံးမှာ "When done, tell me: files changed, why, and what you did not test." ထည့်မယ်</button></div>
+ <div class="preview" id="pv"></div>
+ <div class="row end" style="margin-top:12px"><button class="btn pri" id="send" type="button" disabled>Agent ကို ပို့မယ်</button></div>
+ <div id="reply"></div>`;
+ const pv=()=>{const t=SL.map(([k,lab])=>`${lab}:\n${pick[k]!=null?opts[k][pick[k]].t:'…'}`).join('\n\n')+(report?'\n\nWhen done, tell me: files changed, why, and what you did not test.':'');
+  $('#pv').innerHTML=fileBox('prompt.md',t,'<span>preview</span>');$('#send').disabled=SL.some(([k])=>pick[k]==null)};
+ $$('.opts[data-s]',el).forEach(g=>$$('.opt',g).forEach(b=>b.onclick=()=>{pick[g.dataset.s]=+b.dataset.i;$$('.opt',g).forEach(x=>x.classList.toggle('sel',x===b));pv()}));
+ $('#rep').onclick=()=>{report=!report;$('#rep').classList.toggle('sel',report);pv()};
+ pv();
+ $('#send').onclick=async()=>{
+  $$('.opt,.chk,#send',el).forEach(b=>b.disabled=true);
+  const ch=SL.map(([k])=>opts[k][pick[k]]),bads=ch.filter(c=>!c.g),goods=4-bads.length;
+  const fx={h:bads.reduce((a,c)=>a+(c.h||0),0),s:bads.reduce((a,c)=>a+(c.s||0),0)};if(!report)fx.h-=3;
+  const files=T.files.concat(bads.flatMap(c=>c.f||[])),add=files.reduce((a,f)=>a+f[1],0),del=files.reduce((a,f)=>a+f[2],0);
+  const goal=opts.goal[pick.goal];
+  $('#reply').innerHTML=`<div class="chat" style="margin-top:16px">${msg('me','You','Prompt ပို့လိုက်ပြီ')}<div class="msg ag" id="typing"><small>Agent</small><span class="dots"><span></span><span></span><span></span></span></div></div>`;
+  await wait(reduce?50:1100);
+  $('#typing').outerHTML=msg('ag','Agent',(bads.length?'ပြီးပါပြီ ✅ PR ဖွင့်ထားပါတယ်။':'ပြီးပါပြီ။ PR ဖွင့်ထားပါတယ်။')+(report?` File ${files.length} ခု ပြောင်းထားပါတယ်။ <b>မစစ်ရသေးတာ:</b> ${esc(T.untested)}။`:''));
+  const pr=`<div class="pr"><div class="ph"><b>${esc(goal.g?T.pr:goal.k==='multi'?'Big update: features + fixes':'Improve app')}</b><span>${files.length} files · <span class="add">+${add}</span> <span class="del">−${del}</span></span></div>
+  <ul>${files.map(f=>`<li><span>${esc(f[0])}</span><em><span class="add">+${f[1]}</span> <span class="del">−${f[2]}</span></em></li>`).join('')}</ul>
+  <div class="pn">${bads.map(c=>`<div>${esc(c.bad)}</div>`).join('')}${!bads.length?'<div class="ok">PR သေးပြီး task တစ်ခုတည်းပဲ — စစ်ရလွယ်တယ်</div>':''}${report?`<div class="nt">Agent ကိုယ်တိုင် ပြောတဲ့ မစစ်ရသေးတာ: ${esc(T.untested)}</div>`:'<div class="nt">ဘာမစစ်ရသေးလဲ agent မပြောဘူး — ကိုယ်တိုင် ရှာရမယ်</div>'}</div></div>`;
+  $('#reply').insertAdjacentHTML('beforeend',pr);
+  done({score:(goods+(report?1:0))/5,fx,lessons:[{id:'template',ok:goods===4},{id:'onetask',ok:goal.k!=='multi'},{id:'report',ok:report}],head:goods===4&&report?'PR သေးပြီး သန့်တယ်':goods>=3?'နီးပါးပဲ':'Agent က ခန့်မှန်းပြီး လုပ်သွားတယ်',
+   body:bads.length?`<p>ပိုကောင်းတဲ့ ရွေးချယ်မှု:</p><ul>${SL.filter(([k])=>!opts[k][pick[k]].g).map(([k,lab])=>`<li><b>${lab}:</b> ${esc(T[k].find(o=>o.g).t)}</li>`).join('')}</ul>`:''});
+ };
+}
+
+/* ===== Day 3 · terminal ===== */
+function newTerm(){return {lines:[],staged:false,changes:['src/pages/NotesList.tsx','src/components/SearchBox.tsx'],commits:[{id:'a1f3c9e',m:'Initial notes app'}],broken:false,wrong:0,badRevert:false,hist:[]}}
+function termUI(el,T,goals,handle,chips,app){
+ let gi=0,miss=0;
+ el.querySelector('#termwrap').innerHTML=`<ul class="goals" id="goals"></ul>
+ <div class="term"><div class="tb"><i></i><i></i><i></i><span>zsh — study-notes</span></div><div class="out" id="out" aria-live="polite"></div>
+ <form class="in" id="tf"><label for="cmd">~/study-notes (main) $</label><input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="command ရိုက်ပါ"><button type="submit">Run</button></form></div>
+ <div class="chips" id="chips">${chips.map(c=>`<button class="chip" type="button" data-c="${esc(c)}">${esc(c.trim()||c)}</button>`).join('')}</div>
+ <div class="appview" id="appv"></div>`;
+ const out=$('#out'),inp=$('#cmd');
+ const print=(cls,text)=>{const d=document.createElement('div');d.className=cls;if(cls==='raw')d.innerHTML=text;else d.textContent=text;out.appendChild(d);out.scrollTop=out.scrollHeight};
+ T.print=print;
+ T.lines.forEach(l=>print(l[0],l[1]));
+ const rg=()=>{$('#goals').innerHTML=goals.map((g,i)=>`<li class="${i<gi?'done':i===gi?'cur':''}">${esc(g.t)}</li>`).join('')};
+ const ra=()=>{const a=app();$('#appv').className='appview'+(a.bad?' broken':'');$('#appv').innerHTML=a.html};
+ rg();ra();
+ $$('#chips .chip').forEach(b=>b.onclick=()=>{inp.value=b.dataset.c;inp.focus()});
+ out.addEventListener('click',e=>{const b=e.target.closest('.cid');if(b){inp.value='git revert '+b.dataset.id;inp.focus()}});
+ return new Promise(res=>{
+  $('#tf').onsubmit=e=>{e.preventDefault();const c=inp.value.trim();if(!c)return;inp.value='';print('c',c);
+   const r=handle(c,goals[gi]&&goals[gi].id);
+   (r.out||[]).forEach(l=>print(l[0],l[1]));
+   if(r.advance){const k=goals.findIndex(g=>g.id===r.advance);if(k>=gi){gi=k+1;miss=0}}
+   else if(r.wrong){T.wrong++;miss++;if(miss>=2&&goals[gi]){print('h','Hint: '+goals[gi].hint);$$('#chips .chip').forEach(b=>b.classList.toggle('hint',b.dataset.c.trim()===goals[gi].chip))}}
+   rg();ra();
+   if(gi>=goals.length){$('#tf').querySelector('button').disabled=true;inp.disabled=true;setTimeout(res,300)}
+  };
+  inp.focus({preventScroll:true});
+ });
+}
+function gitHandle(T,c){
+ const m=c.replace(/\s+/g,' ');
+ if(m==='clear'){$('#out').innerHTML='';return {}}
+ if(m==='git status'){
+  if(!T.changes.length)return {out:[['d','On branch main\nnothing to commit, working tree clean']],advance:'status'};
+  return {out:[['d','On branch main'],[T.staged?'ok':'er',(T.staged?'Changes to be committed:\n':'Changes not staged for commit:\n')+T.changes.map(f=>'        modified:   '+f).join('\n')]],advance:'status'}}
+ if(/^git add (-A|\.|--all)$/.test(m)){if(!T.changes.length)return {out:[['d','(ပြောင်းထားတာ မရှိဘူး)']]};T.staged=true;return {out:[['d','(ရွေးပြီးပြီ — git status နဲ့ ကြည့်လို့ရတယ်)']],advance:'add'}}
+ if(/^git add /.test(m))return {out:[['d','File တစ်ခုချင်း ထည့်လို့လည်း ရတယ်၊ ဒီမှာတော့ -A နဲ့ အကုန်ရွေးပါ']],wrong:true};
+ if(m==='git commit'||m==='git commit -m'||/^git commit -m ["']\s*["']$/.test(m))return {out:[['er','Aborting commit due to empty commit message.'],['h','-m "..." နဲ့ ဘာလုပ်ခဲ့လဲ message ထည့်ပါ']],wrong:true};
+ const cm=m.match(/^git commit -m ["'](.+)["']$/);
+ if(cm){if(!T.staged)return {out:[['er','no changes added to commit (use "git add" first)']],wrong:true};
+  const id='c4d8a02';T.commits.unshift({id,m:cm[1]});T.staged=false;T.changes=[];T.saved=cm[1];
+  return {out:[['ok',`[main ${id}] ${cm[1]}\n 2 files changed, 46 insertions(+), 2 deletions(-)`]],advance:'commit'}}
+ if(m==='git log --oneline'||m==='git log'){return {out:[['raw',T.commits.map(x=>`<button class="cid" type="button" data-id="${x.id}">${x.id}</button> ${esc(x.m)}`).join('<br>')],['d','(commit id ကို နှိပ်ရင် revert command ထဲ ထည့်ပေးမယ်)']],advance:'log'}}
+ const rv=m.match(/^git revert ([0-9a-f]{4,})$/);
+ if(rv){const x=T.commits.find(k=>k.id.startsWith(rv[1]));
+  if(!x)return {out:[['er',`fatal: bad revision '${rv[1]}'`]],wrong:true};
+  if(x.id==='b7e2d41'){T.broken=false;T.commits.unshift({id:'e91f0b3',m:'Revert "Refactor note loading"'});return {out:[['ok','[main e91f0b3] Revert "Refactor note loading"\n 1 file changed, 9 insertions(+), 31 deletions(-)']],advance:'revert'}}
+  if(x.id==='a1f3c9e')return {out:[['er','ဒါက app အစ commit — revert လုပ်ရင် app တစ်ခုလုံး ပျောက်မယ်။ မ run လိုက်ဘူး။']],wrong:true};
+  T.badRevert=true;return {out:[['er',`[main 0d3a7c1] Revert "${x.m}"`],['er','Search feature ပျောက်သွားပြီ! App ကလည်း ပျက်နေတုန်းပဲ။'],['d','(ပြန်ပြင်ပေးလိုက်ပြီ — ပျက်စေတဲ့ commit ကို git log မှာ ပြန်ရှာပါ)']],wrong:true}}
+ if(m==='git revert')return {out:[['er','usage: git revert <commit-id>']],wrong:true};
+ if(/^git reset --hard/.test(m))return {out:[['er','⚠ reset --hard က commit မလုပ်ရသေးတဲ့ အလုပ်တွေကို ပြန်မရအောင် ဖျက်တယ်။ ဒီမှာ မ run လိုက်ဘူး။']],wrong:true};
+ if(/^git push( .*)?--force/.test(m))return {out:[['er','⚠ push --force က GitHub ပေါ်က history ကို ဖျက်ရေးတယ်။ ဒီမှာ မ run လိုက်ဘူး။']],wrong:true};
+ if(m==='git push')return {out:[['d','Everything up-to-date (ဒီ task မှာ push မလိုဘူး)']]};
+ if(m==='help')return {out:[['h','git status · git add -A · git commit -m "…" · git log --oneline · git revert <id>']]};
+ return {out:[['er',`zsh: command not found or not supported here: ${c}`]],wrong:true};
+}
+const GCHIPS=['git status','git add -A','git commit -m "Add search"','git log --oneline','git revert ','git reset --hard','git push --force'];
+async function stepCommit(el,done,T){
+ el.innerHTML=`<p class="eyebrow">Step 1 · Save point</p><h2>Search အလုပ်ဖြစ်နေတုန်း save point လုပ်ပါ</h2>
+ <div class="story">Terminal မှာ command ရိုက်ပါ (ဒါမှမဟုတ် အောက်က chip ကိုနှိပ်ပြီး Run)။ မှားလည်း app ကို မထိခိုက်အောင် ကာထားတယ်။</div><div id="termwrap"></div>`;
+ await termUI(el,T,[{id:'status',t:'ဘာတွေ ပြောင်းထားလဲ ကြည့်ပါ',hint:'git status',chip:'git status'},{id:'add',t:'ပြောင်းထားတာ အကုန် ရွေးပါ',hint:'git add -A',chip:'git add -A'},{id:'commit',t:'Message ပါတဲ့ save point လုပ်ပါ',hint:'git commit -m "Add search"',chip:'git commit -m "Add search"'}],c=>gitHandle(T,c),GCHIPS,()=>({html:'App: Notes list + search — အလုပ်ဖြစ်နေတယ်'}));
+ const w=T.wrong;T.w1=w;
+ done({score:Math.max(.3,1-w*.15),lessons:[{id:'commit',ok:w<=1}],head:w===0?'Save point ရပြီ':'Save point ရပြီ — နည်းနည်း ရှာရတယ်',
+  body:`<p><code>${esc(T.saved||'')}</code> ဆိုတဲ့ commit က အခု search အလုပ်ဖြစ်နေတဲ့ အခြေအနေကို မှတ်ထားတယ်။ နောက်ပြောင်းလဲမှု ပျက်ရင် ဒီကို ပြန်လာလို့ရတယ်။</p>`});
+}
+async function stepRevert(el,done,T){
+ T.commits.unshift({id:'b7e2d41',m:'Refactor note loading'});T.broken=true;T.wrong=0;
+ el.innerHTML=`<p class="eyebrow">Step 2 · Revert</p><h2>Agent ရဲ့ နောက် commit က app ကို ပျက်စေပြီ</h2>
+ <div class="chat">${msg('ag','Agent','Note list ကို မြန်အောင် refactor လုပ်ပြီး commit လုပ်ပြီးပါပြီ ✅ <code>b7e2d41</code>')}</div>
+ <div id="termwrap"></div>`;
+ T.lines=[];
+ await termUI(el,T,[{id:'log',t:'Save point စာရင်း ကြည့်ပြီး ပျက်စေတဲ့ commit ကို ရှာပါ',hint:'git log --oneline',chip:'git log --oneline'},{id:'revert',t:'ပျက်စေတဲ့ commit တစ်ခုတည်းကို ပြန်ဖျက်ပါ',hint:'git revert b7e2d41',chip:'git revert'}],c=>gitHandle(T,c),GCHIPS,()=>T.broken?{bad:1,html:'App ပျက်နေတယ် — Uncaught TypeError: notes.map is not a function'}:{html:'App ပြန်ကောင်းသွားပြီ — search လည်း ရှိနေတုန်းပဲ'});
+ const w=T.wrong;
+ done({score:Math.max(.3,1-w*.15-(T.badRevert?.2:0)),fx:{h:T.badRevert?-5:0},lessons:[{id:'revert',ok:w<=1&&!T.badRevert}],head:w===0?'ပျက်တာကိုပဲ ဖြုတ်လိုက်တယ်':'App ပြန်ကောင်းသွားပြီ',
+  body:`<p><code>git revert b7e2d41</code> က အဲ့ commit ရဲ့ ပြောင်းလဲမှုကို ပြန်ဖျက်တဲ့ commit အသစ် လုပ်ပေးတယ်။ မင်းရဲ့ search commit က မထိဘဲ ကျန်နေတယ်။ Save point မရှိခဲ့ရင် ပျက်တာကို လက်နဲ့ ပြန်ရှာရမယ်။</p>${T.badRevert?'<p>Search commit ကို revert လုပ်မိတဲ့အခါ ကောင်းနေတဲ့ feature ပျောက်သွားတယ် — log ထဲက message ကို ဖတ်ပြီးမှ id ရွေးပါ။</p>':''}`});
+}
+
+/* ===== Day 4 · debug ===== */
+function stepFresh(el,done){
+ const O=shuffle([{k:'fresh',t:'Chat အသစ်ဖွင့်ပြီး error အပြည့်၊ steps နဲ့ bug report ရေးပြီး ပြန်စမယ်'},{k:'again',t:'ဒီ chat ထဲမှာပဲ "ထပ်ပြင်ပေးပါ၊ သေချာလုပ်" လို့ ဆက်ပြောမယ်'},{k:'switch',t:'React ကြောင့်ဖြစ်မယ် — Svelte ပြောင်းမယ်'},{k:'rewrite',t:'Note editor ကို အစကနေ ပြန်ရေးခိုင်းမယ်'}]);
+ el.innerHTML=`<p class="eyebrow">Step 1 · Chat</p><h2>Agent က ၂ ခါ "ပြင်ပြီး" လို့ ပြောပြီးပြီ</h2>
+ <div class="chat">${msg('me','You','Save နှိပ်ရင် error တက်တယ်။ ပြင်ပေးပါ။')}${msg('ag','Agent','ပြင်ပြီးပါပြီ ✅ Save function ကို update လုပ်လိုက်ပါတယ်။')}${msg('me','You','အခုလည်း error တက်နေတုန်းပဲ')}${msg('ag','Agent','တောင်းပန်ပါတယ်! အခု သေချာ ပြင်ပြီးပါပြီ ✅ State handling ကို refactor လုပ်လိုက်ပါတယ်။')}${msg('me','You','…အခုလည်း တက်နေတုန်းပဲ')}</div>
+ <p class="ask">အခု ဘာလုပ်မလဲ?</p><div class="opts" id="o">${O.map((x,i)=>`<button class="opt" type="button" data-k="${x.k}"><span class="k">${i+1}</span><span>${esc(x.t)}</span></button>`).join('')}</div>`;
+ $$('#o .opt',el).forEach(b=>b.onclick=()=>{const k=b.dataset.k,ok=k==='fresh';$$('#o .opt',el).forEach(x=>{x.disabled=true;x.classList.add(x.dataset.k==='fresh'?'right':x===b?'wrong':'dim')});
+  done({score:ok?1:0,fx:{h:ok?0:k==='again'?-6:-12},lessons:[{id:'fresh',ok}].concat(k==='switch'?[{id:'stack',ok:false}]:[]),head:ok?'Chat အသစ်နဲ့ ပြန်စမယ်':'ပိုရှုပ်သွားပြီ',
+   body:ok?'<p>Agent ဆီကို "error တက်တယ်" လောက်ပဲ ပေးထားလို့ သူ ခန့်မှန်းပြီး ပြင်နေတာ။ Chat အသစ်မှာ အချက်အလက် အပြည့်နဲ့ စရင် ပိုမြန်တယ်။</p>':k==='again'?'<p>Agent က အရင်ကမှားခဲ့တဲ့ အိုင်ဒီယာ (state refactor) ကို ဆက်ကိုင်ထားပြီး ထပ်ပြင်တော့ file ၃ ခု ထပ်ပြောင်းသွားတယ် — error ကတော့ ကျန်နေတုန်းပဲ။</p>':'<p>Bug က code တစ်နေရာမှာပဲ ရှိတာ — ပြန်ရေးရင် bug အသစ်တွေ ပါလာမယ်။</p>'})});
+}
+function stepConsole(el,done){
+ const LN=[{lv:'log',t:'Notes loaded: 12'},{lv:'warn',t:'⚠ React Router Future Flag Warning: v7_startTransition'},{lv:'err',t:"Uncaught TypeError: Cannot read properties of undefined (reading 'id')",need:1},{lv:'err',t:'    at saveNote (NoteEditor.tsx:42:18)',need:1},{lv:'err',t:'    at HTMLButtonElement.onClick (NoteEditor.tsx:88:5)'},{lv:'log',t:'[vite] hot updated: /src/App.tsx'},{lv:'warn',t:'Download the React DevTools for a better development experience'}];
+ const sel=new Set();
+ el.innerHTML=`<p class="eyebrow">Step 2 · DevTools Console</p><h2>Bug report ထဲ ဘာ line တွေ copy ကူးမလဲ?</h2>
+ <div class="story">/notes/new မှာ Save နှိပ်ပြီး Console ကို ဖွင့်ထားတယ် (Mac Chrome: Cmd + Option + J)။ <b>Agent အတွက် အရေးကြီးတဲ့ line တွေ</b>ကို နှိပ်ပြီး ရွေးပါ။</div>
+ <div class="lines" id="con"><div class="fh"><span>Console</span><span id="cnt">0 line</span></div>${LN.map((x,i)=>`<button class="ln ${x.lv==='err'?'err':x.lv==='warn'?'warn':''}" type="button" data-i="${i}"><span class="lv">${x.lv}</span><span>${esc(x.t)}</span></button>`).join('')}</div>
+ <div class="row end" style="margin-top:14px"><button class="btn pri" id="go" type="button" disabled>Report ထဲ ထည့်မယ်</button></div>`;
+ $$('#con .ln',el).forEach(b=>b.onclick=()=>{const i=+b.dataset.i;sel.has(i)?sel.delete(i):sel.add(i);b.classList.toggle('sel',sel.has(i));$('#cnt').textContent=sel.size+' line';$('#go').disabled=!sel.size});
+ $('#go').onclick=()=>{
+  const need=LN.filter(x=>x.need).length,got=[...sel].filter(i=>LN[i].need).length,noise=[...sel].filter(i=>!LN[i].need&&LN[i].lv!=='err').length;
+  $$('#con .ln',el).forEach(b=>{const i=+b.dataset.i,x=LN[i];b.disabled=true;b.classList.remove('sel');if(x.need)b.classList.add(sel.has(i)?'flag-ok':'flag-miss');else if(sel.has(i)&&x.lv!=='err')b.classList.add('flag-false')});$('#go').disabled=true;
+  RUN.bug=[...sel].sort((a,b)=>a-b).map(i=>LN[i].t);
+  const ok=got===need&&noise<=1,score=clamp(got/need-noise*.15,0,1);
+  done({score,fx:{h:got<need?-6:0},lessons:[{id:'fullerror',ok}],head:ok?'Agent တန်းရှာနိုင်ပြီ':got<need?'အရေးကြီးတဲ့ line ကျန်ခဲ့တယ်':'Line တွေ များနေတယ်',
+   body:`<p><code>TypeError … reading 'id'</code> က ဘာမှားလဲ ပြောတယ်။ <code>at saveNote (NoteEditor.tsx:42:18)</code> က <b>ဘယ် file၊ ဘယ် line</b> လဲ ပြောတယ် — agent အတွက် အရေးကြီးဆုံး သဲလွန်စ။ Vite / DevTools warning တွေက ဒီ bug နဲ့ မဆိုင်ဘူး။</p>`});
+ };
+}
+function stepRepro(el,done){
+ const ST=[{t:'/notes/new page ကို သွားတယ်',o:1},{t:'Title မှာ "Newton" လို့ ရိုက်တယ်',o:2},{t:'Save ကို နှိပ်တယ်',o:3},{t:'Dark mode ကို ဖွင့်တယ်',o:0}];
+ const sh=shuffle(ST),order=[];
+ el.innerHTML=`<p class="eyebrow">Step 3 · Steps to reproduce</p><h2>Bug ပြန်ဖြစ်အောင် လုပ်ရတဲ့ အဆင့်တွေကို အစဉ်လိုက် နှိပ်ပါ</h2>
+ <div class="story">ဒီ bug နဲ့ မဆိုင်တဲ့ အဆင့် တစ်ခု ရောထားတယ်။ မဆိုင်ရင် မနှိပ်နဲ့။</div>
+ <div class="order" id="ord">${sh.map((x,i)=>`<button class="opt" type="button" data-i="${i}"><span class="k">·</span><span>${esc(x.t)}</span></button>`).join('')}</div>
+ <div class="row end" style="margin-top:14px"><button class="link" id="reset" type="button">ပြန်စမယ်</button><button class="btn pri" id="go" type="button" disabled>Bug report ပို့မယ်</button></div>`;
+ const upd=()=>{$$('#ord .opt',el).forEach(b=>{const p=order.indexOf(+b.dataset.i);b.querySelector('.k').textContent=p<0?'·':p+1;b.classList.toggle('sel',p>=0)});$('#go').disabled=order.length<3};
+ $$('#ord .opt',el).forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(order.includes(i))return;order.push(i);upd()});
+ $('#reset').onclick=()=>{order.length=0;upd()};
+ $('#go').onclick=async()=>{
+  $$('#ord .opt,#go,#reset',el).forEach(b=>b.disabled=true);
+  const seq=order.map(i=>sh[i]),ok=seq.length===3&&seq.every((x,k)=>x.o===k+1),irrelevant=seq.some(x=>!x.o);
+  const lines=(RUN.bug&&RUN.bug.length?RUN.bug:["Uncaught TypeError: Cannot read properties of undefined (reading 'id')"]).join('\n');
+  const report=`Problem:\nNote အသစ် Save နှိပ်ရင် error တက်ပြီး save မဖြစ်ဘူး\n\nSteps to reproduce:\n${seq.map((x,k)=>`${k+1}. ${x.t}`).join('\n')}\n\nExpected: Note save ဖြစ်ပြီး list ထဲ ပေါ်ရမယ်\n\nFull error (copied exactly from Console):\n${lines}\n\nAlready tried (did not work):\n- Agent က save function နဲ့ state handling ကို ၂ ခါ ပြင်ခဲ့တယ်`;
+  el.insertAdjacentHTML('beforeend',`<div style="margin-top:16px">${fileBox('fresh-chat-bug-report.md',report)}</div><div class="chat" id="nc">${msg('sys','','Chat အသစ်')}<div class="msg ag" id="typing"><small>Agent</small><span class="dots"><span></span><span></span><span></span></span></div></div>`);
+  bindCopy(el);await wait(reduce?50:1200);
+  const full=RUN.bug&&RUN.bug.some(t=>t.includes('NoteEditor.tsx:42'));
+  $('#typing').outerHTML=msg('ag','Agent',full?'<code>NoteEditor.tsx:42</code> မှာ note အသစ်ဆိုရင် <code>note</code> က undefined ဖြစ်နေလို့ <code>note.id</code> ဖတ်လို့ မရတာပါ။ Note အသစ်အတွက် id မရှိသေးရင် insert လုပ်အောင် ပြင်လိုက်ပါတယ် — file ၁ ခု၊ ၄ line။ Save ကို ပြန်စမ်းကြည့်ပါ။':'Save function ထဲမှာ undefined ဖြစ်နေတာ ရှိပါတယ်။ ဘယ် line လဲ ရှာကြည့်ပြီး ပြင်ပါမယ်… (file နဲ့ line မပါလို့ ရှာရဦးမယ်)');
+  done({score:ok?1:irrelevant?.4:.6,fx:{h:ok?0:-4},lessons:[{id:'repro',ok}],head:ok?'တစ်ခါတည်းနဲ့ ပြင်နိုင်သွားပြီ':'အဆင့်တွေ မှားနေတယ်',
+   body:ok?'<p>Error အပြည့်၊ steps၊ ဘာကြိုးစားပြီးပြီ — အကုန်ပါတော့ chat အသစ်က agent ပထမဆုံးအကြိမ်မှာ ပြင်နိုင်တယ်။</p>':`<p>မှန်တဲ့ အစဉ်: ၁) /notes/new ကိုသွား ၂) Title ရိုက် ၃) Save နှိပ်။${irrelevant?' Dark mode က ဒီ bug နဲ့ မဆိုင်ဘူး — မဆိုင်တာ ထည့်ရင် agent လမ်းလွဲတယ်။':''}</p>`});
+ };
+}
+
+/* ===== Day 5 · review ===== */
+function stepDiff(el,done){
+ const F=[
+  {f:'src/pages/NotesList.tsx',st:'+4 −1',ln:[['+',"import { TagFilter } from '../components/TagFilter'"],['+','const [tag, setTag] = useState<string | null>(null)'],['+','const shown = tag ? notes.filter(n => n.tags.includes(tag)) : notes'],['+','<TagFilter tags={allTags} value={tag} onChange={setTag} />']]},
+  {f:'src/components/TagFilter.tsx',st:'+3',ln:[['+','export function TagFilter({ tags, value, onChange }: Props) {'],['+','  return tags.map(t => <Chip key={t} active={t === value} onClick={() => onChange(t === value ? null : t)}>{t}</Chip>)'],['+','}']]},
+  {f:'src/auth/Login.tsx',st:'+1 −1',ln:[['-',"if (!session) return <Navigate to=\"/login\" />",'login','Task နဲ့ မဆိုင်တဲ့ Login file — login မဝင်ဘဲ app ထဲ ဝင်လို့ရသွားမယ်'],['+','// removed redirect, was annoying while testing']]},
+  {f:'.env',st:'+1',ln:[['+','VITE_GEMINI_KEY=AIzaSyD4-9xQ7rTb2LmX0kPq3vN8wE5yZ1aC6dF','env','.env ကို commit လုပ်ထားတယ် — key အစစ် GitHub ပေါ် ရောက်သွားမယ်']]},
+  {f:'package.json',st:'+1',ln:[['+','"react": "^18.3.1",',null],['+','"react-tagz-ultra": "^0.0.3",','pkg','မကြားဖူးတဲ့ package၊ version 0.0.3 — npm မှာ တကယ်ရှိမရှိ အရင်စစ်ရမယ်']]},
+  {f:'src/lib/ai.ts',st:'+2',ln:[['+','// suggest tags with Gemini'],['+','fetch(`https://generativelanguage.googleapis.com/v1/models/gemini:generate?key=${import.meta.env.VITE_GEMINI_KEY}`)','fe','ပိုက်ဆံကုန်တဲ့ key ကို browser ကနေ ခေါ်နေတယ် — ဘယ်သူမဆို DevTools မှာ ယူလို့ရတယ်']]}
+ ];
+ F[4].ln[0]=[' ','"react": "^18.3.1",'];
+ const all=[];F.forEach((x,fi)=>x.ln.forEach((l,li)=>all.push({fi,li,s:l[0],t:l[1],flag:l[2]||null,why:l[3]||''})));
+ const sel=new Set(),flags=all.filter(a=>a.flag).length;
+ el.innerHTML=`<p class="eyebrow">Step 1 · Files changed</p><h2>PR ထဲမှာ သံသယဖြစ်စရာ line တွေကို နှိပ်ပြီး flag လုပ်ပါ</h2>
+ <div class="chat">${msg('ag','Agent','Done ✅ Tag filter ထည့်ပြီးပါပြီ။ PR #14 — merge လုပ်လို့ရပါပြီ။')}</div>
+ <div class="story">Code အကုန် နားမလည်လည်း ရတယ်။ <b>Task နဲ့ မဆိုင်တာ၊ key၊ မသိတဲ့ package</b> တွေကို ရှာပါ။ ${flags} ခု ဝှက်ထားတယ်။</div>
+ <div class="diffs" id="df">${F.map((x,fi)=>`<div class="lines"><div class="fh"><span>${esc(x.f)}</span><span>${x.st}</span></div>${x.ln.map((l,li)=>`<button class="ln ${l[0]==='+'?'plus':l[0]==='-'?'minus':''}" type="button" data-k="${fi}-${li}"><span class="sg">${l[0]}</span><span>${esc(l[1])}</span></button>`).join('')}</div>`).join('')}</div>
+ <div class="row end" style="margin-top:14px"><span class="counter" id="cnt">0 flag</span><button class="btn pri" id="go" type="button">Review ပြီးပြီ</button></div>`;
+ $$('#df .ln',el).forEach(b=>b.onclick=()=>{const k=b.dataset.k;sel.has(k)?sel.delete(k):sel.add(k);b.classList.toggle('sel',sel.has(k));$('#cnt').textContent=sel.size+' flag'});
+ $('#go').onclick=()=>{
+  const found=all.filter(a=>a.flag&&sel.has(a.fi+'-'+a.li)),missed=all.filter(a=>a.flag&&!sel.has(a.fi+'-'+a.li)),falseN=all.filter(a=>!a.flag&&sel.has(a.fi+'-'+a.li)).length;
+  $$('#df .ln',el).forEach(b=>{const a=all.find(x=>x.fi+'-'+x.li===b.dataset.k);b.disabled=true;b.classList.remove('sel');if(a.flag)b.classList.add(sel.has(b.dataset.k)?'flag-ok':'flag-miss');else if(sel.has(b.dataset.k))b.classList.add('flag-false')});$('#go').disabled=true;
+  RUN.missed=missed.map(a=>a.flag);
+  const FX={login:{s:-15},env:{s:-15,b:-10},pkg:{s:-10},fe:{s:-10,b:-10}};const fx={s:0,b:0};missed.forEach(a=>{fx.s+=FX[a.flag].s||0;fx.b+=FX[a.flag].b||0});
+  const score=clamp(found.length/flags-falseN*.1,0,1),has=f=>!missed.some(a=>a.flag===f);
+  done({score,fx,lessons:[{id:'diff',ok:has('login')},{id:'env',ok:has('env')},{id:'package',ok:has('pkg')},{id:'frontend',ok:has('fe')}],head:missed.length?`${missed.length} ခု လွတ်သွားတယ်`:'အကုန် ဖမ်းမိတယ်',
+   body:`<ul>${all.filter(a=>a.flag).map(a=>`<li>${sel.has(a.fi+'-'+a.li)?'':'<b>(လွတ်)</b> '}<code>${esc(F[a.fi].f)}</code> — ${esc(a.why)}</li>`).join('')}</ul>${falseN?`<p>အဝါရောင်က ပြဿနာမရှိတဲ့ line တွေ — tag filter အတွက် ပုံမှန် code။</p>`:''}`});
+ };
+}
+function stepAskMerge(el,done){
+ const Q=shuffle([{t:'Which files did you change?',g:1},{t:'Why did each change need to happen?',g:1},{t:'What did you NOT check or test?',g:1},{t:'Are you sure it works?',g:0},{t:'Is this the best possible code?',g:0},{t:'Can you make it faster?',g:0}]);
+ const A=shuffle([{k:'req',t:'Request changes — မေးခွန်း ၃ ခုနဲ့ flag တွေ ပြင်ခိုင်း'},{k:'merge',t:'Merge — agent က Done ပြောပြီပဲ'},{k:'close',t:'PR ပိတ်ပြီး ကိုယ်တိုင် အကုန် ပြန်ရေး'}]);
+ const sel=new Set();let act=null;
+ el.innerHTML=`<p class="eyebrow">Step 2 · Before I merge</p><h2>Agent ကို ဘာမေးမလဲ? (၃ ခု)</h2>
+ <div class="opts" id="q">${Q.map((x,i)=>`<button class="chk mono" type="button" data-i="${i}" style="font-size:13.5px">${esc(x.t)}</button>`).join('')}</div>
+ <p class="ask">ပြီးရင် PR ကို ဘာလုပ်မလဲ?</p><div class="opts" id="a">${A.map(x=>`<button class="opt" type="button" data-k="${x.k}"><span>${esc(x.t)}</span></button>`).join('')}</div>
+ <div class="row end" style="margin-top:14px"><span class="counter" id="cnt">0 / 3</span><button class="btn pri" id="go" type="button" disabled>ပို့မယ်</button></div>`;
+ const upd=()=>{$('#cnt').textContent=sel.size+' / 3';$('#go').disabled=!(sel.size===3&&act)};
+ $$('#q .chk',el).forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(sel.has(i))sel.delete(i);else{if(sel.size>=3){toast('၃ ခုပဲ ရွေးပါ');return}sel.add(i)}b.classList.toggle('sel',sel.has(i));upd()});
+ $$('#a .opt',el).forEach(b=>b.onclick=()=>{act=b.dataset.k;$$('#a .opt',el).forEach(x=>x.classList.toggle('sel',x===b));upd()});
+ $('#go').onclick=()=>{
+  const good=[...sel].filter(i=>Q[i].g).length;
+  $$('#q .chk',el).forEach(b=>{const x=Q[+b.dataset.i];b.disabled=true;if(sel.has(+b.dataset.i))b.classList.add(x.g?'right':'wrong');else if(x.g)b.classList.add('miss')});
+  $$('#a .opt',el).forEach(b=>{b.disabled=true;b.classList.remove('sel');b.classList.add(b.dataset.k==='req'?'right':b.dataset.k===act?'wrong':'dim')});$('#go').disabled=true;
+  const fx=act==='merge'?{h:-10,s:-10}:act==='close'?{h:-5}:{};
+  done({score:(good/3)*.6+(act==='req'?.4:0),fx,lessons:[{id:'done',ok:good===3&&act==='req'}],head:act==='merge'?'Bug တွေ production ထဲ ရောက်သွားပြီ':good===3&&act==='req'?'Merge မလုပ်ခင် ရပ်ပြီး စစ်တယ်':'ရပ်တာ မှန်တယ်၊ မေးခွန်း ပြန်ကြည့်',
+   body:`<p>"What did you NOT check or test?" ကို မေးတော့ agent က <i>"Tag ဗလာ note တွေ၊ login မဝင်ဘဲ ဝင်တာ၊ .env file ကို မစစ်ခဲ့ပါဘူး"</i> လို့ ဝန်ခံတယ် — review မှာ မင်းဖမ်းခဲ့တာတွေနဲ့ ကိုက်တယ်။</p>${act==='close'?'<p>ကိုယ်တိုင် အကုန်ပြန်ရေးစရာ မလိုဘူး — ပြင်ရမယ့်အချက် ရှင်းရှင်းနဲ့ request changes လုပ်ရင် agent ပြင်ပေးတယ်။</p>':''}`});
+ };
+}
+
+/* ===== Day 6 · security ===== */
+function stepSort(el,done){
+ const IT=shuffle([{t:'Supabase project URL',a:'b'},{t:'Supabase anon key (RLS ဖွင့်ထားရင်)',a:'b'},{t:'App နာမည် "Study Notes"',a:'b'},{t:'VITE_ နဲ့စတဲ့ variable တွေ',a:'b'},{t:'Gemini API key',a:'s'},{t:'Supabase service_role key',a:'s'},{t:'Database password',a:'s'},{t:'Stripe secret key (sk_live_…)',a:'s'}]);
+ const pick={};
+ el.innerHTML=`<p class="eyebrow">Step 1 · Frontend vs backend</p><h2>ဘယ်ဟာ browser ထဲ ရောက်လို့ရလဲ?</h2>
+ <div class="story">Browser ထဲ ရောက်တာမှန်သမျှ DevTools နဲ့ ဘယ်သူမဆို ကြည့်လို့ရတယ်။ တစ်ခုစီကို ခွဲပါ။</div>
+ <div class="sort" id="so">${IT.map((x,i)=>`<div class="si" data-i="${i}"><span>${esc(x.t)}</span><div class="seg"><button type="button" data-v="b">Browser OK</button><button type="button" data-v="s">Server only</button></div></div>`).join('')}</div>
+ <div class="row end" style="margin-top:14px"><button class="btn pri" id="go" type="button" disabled>စစ်မယ်</button></div>`;
+ $$('#so .si',el).forEach(r=>$$('button',r).forEach(b=>b.onclick=()=>{pick[r.dataset.i]=b.dataset.v;$$('button',r).forEach(x=>x.classList.toggle('on',x===b));$('#go').disabled=Object.keys(pick).length<IT.length}));
+ $('#go').onclick=()=>{
+  let ok=0,leak=0;$$('#so .si',el).forEach(r=>{const x=IT[r.dataset.i],p=pick[r.dataset.i];$$('button',r).forEach(b=>b.disabled=true);if(p===x.a){ok++;r.classList.add('right')}else{r.classList.add('wrong');if(x.a==='s')leak++}});$('#go').disabled=true;
+  done({score:ok/IT.length,fx:{s:-8*leak,b:-5*leak},lessons:[{id:'frontend',ok:ok===IT.length}],head:ok===IT.length?'ခွဲတာ မှန်တယ်':leak?`Secret ${leak} ခု browser ထဲ ရောက်သွားမယ်`:'နည်းနည်း လွဲတယ်',
+   body:`<p><b>VITE_</b> နဲ့စတဲ့ variable မှန်သမျှ browser ထဲ ရောက်တယ်။ Supabase URL နဲ့ anon key က browser မှာ ရှိရမှာပဲ — ကာကွယ်ပေးတာက RLS။ ပိုက်ဆံကုန်တဲ့ key၊ service_role key၊ password တွေက server ဘက်မှာပဲ။</p>`+fileBox('.env.example',D.code.envexample)});
+ };
+}
+function stepIncident(el,done){
+ const AC=shuffle([{k:'rotate',t:'Google Cloud dashboard မှာ အဲ့ key ကို ပိတ်ပြီး key အသစ် ထုတ် (rotate)',o:1},{k:'ignore',t:'.env ကို .gitignore ထဲထည့်ပြီး key အသစ်ကို .env ထဲမှာပဲ ထား',o:2},{k:'bill',t:'Billing / usage ကို စစ်ပြီး budget alert ထား',o:3},{k:'delete',t:'Commit ကို ဖျက်လိုက်ရင် ရပြီ — key ဟောင်းကို ဆက်သုံး',o:0,why:'Commit ဖျက်လည်း Git history နဲ့ fork တွေထဲမှာ ကျန်တယ် — key ကို ယူပြီးသား ဖြစ်နိုင်တယ်'},{k:'private',t:'Repo ကို private ပြောင်းရုံနဲ့ ရပြီ',o:0,why:'Bot တွေက public repo ကို မိနစ်ပိုင်းအတွင်း scan လုပ်တယ် — private ပြောင်းချိန်မှာ key ပါသွားပြီးသား'}]);
+ const order=[];
+ el.innerHTML=`<p class="eyebrow">Step 2 · Key ပေါက်သွားပြီ</p><h2>ဘာကို အရင်လုပ်မလဲ — ၃ ဆင့်ကို အစဉ်လိုက် နှိပ်ပါ</h2>
+ <div class="mail"><div class="mh"><b>GitHub</b> · secret-scanning@github.com<br>[your-name/study-notes] Google API Key detected in <code>.env</code> (commit 9fd21ab)</div><div class="mb">Public repository မှာ secret တစ်ခု တွေ့ပါတယ်။ Key ကို ချက်ချင်း revoke လုပ်ပါ။</div></div>
+ <div class="order" id="ord" style="margin-top:14px">${AC.map((x,i)=>`<button class="opt" type="button" data-i="${i}"><span class="k">·</span><span>${esc(x.t)}</span></button>`).join('')}</div>
+ <div class="row end" style="margin-top:14px"><button class="link" id="reset" type="button">ပြန်စမယ်</button><button class="btn pri" id="go" type="button" disabled>လုပ်မယ်</button></div>`;
+ const upd=()=>{$$('#ord .opt',el).forEach(b=>{const p=order.indexOf(+b.dataset.i);b.querySelector('.k').textContent=p<0?'·':p+1;b.classList.toggle('sel',p>=0)});$('#go').disabled=order.length<3};
+ $$('#ord .opt',el).forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(order.includes(i)||order.length>=3)return;order.push(i);upd()});
+ $('#reset').onclick=()=>{order.length=0;upd()};
+ $('#go').onclick=()=>{
+  const seq=order.map(i=>AC[i]),traps=seq.filter(x=>!x.o),pos=seq.filter((x,k)=>x.o===k+1).length,first=seq[0].k==='rotate';
+  $$('#ord .opt,#go,#reset',el).forEach(b=>b.disabled=true);
+  $$('#ord .opt',el).forEach(b=>{const x=AC[+b.dataset.i],p=order.indexOf(+b.dataset.i);if(p>=0)b.classList.add(x.o===p+1?'right':'wrong');else if(x.o)b.classList.add('miss')});
+  done({score:clamp(pos/3-traps.length*.3,0,1),fx:{s:traps.length?-15:first?0:-8,b:traps.length?-20:first?0:-10},lessons:[{id:'rotate',ok:first&&!traps.length},{id:'env',ok:seq.some(x=>x.k==='ignore')}],head:first&&!traps.length?'Key ကို အချိန်မီ ပိတ်လိုက်ပြီ':traps.length?'Key က ဆက်အလုပ်လုပ်နေတုန်း':'ပိတ်တာ နောက်ကျသွားတယ်',
+   body:`<p>မှန်တဲ့ အစဉ်: <b>၁) rotate</b> → ၂) .gitignore → ၃) billing စစ်။ Key ကို မပိတ်မချင်း ယူထားတဲ့သူ ဆက်သုံးနိုင်တယ် — ဒါကြောင့် အရင်ဆုံး ပိတ်ရတာ။</p>${traps.length?`<ul>${traps.map(x=>`<li>${esc(x.t)} — ${esc(x.why)}</li>`).join('')}</ul>`:''}`+fileBox('.gitignore',D.code.gitignore)});
+ };
+}
+function stepNpm(el,done){
+ const P=shuffle([{k:'real',n:'@supabase/supabase-js',w:'4,812,330',u:'3 ရက်က',r:'github.com/supabase/supabase-js',v:'2.45.4'},{k:'fake',n:'supabase-auth-helperz',w:'12',u:'2 ရက်က',r:'— မရှိ',v:'0.0.1'},{k:'free',n:'supabase-js-free',w:'38',u:'၁၁ လက',r:'— မရှိ',v:'1.0.0'}]);
+ el.innerHTML=`<p class="eyebrow">Step 3 · Package</p><h2>Agent က package အသစ် install ခိုင်းတယ်</h2>
+ <div class="chat">${msg('ag','Agent','Login ကို ပိုလွယ်အောင် ဒါကို install လုပ်ပါ:<br><code>npm install supabase-auth-helperz</code>')}</div>
+ <div class="story">npmjs.com မှာ ရှာကြည့်တော့ ဒီ ၃ ခု တွေ့တယ်။</div>
+ <div class="npms">${P.map(p=>`<div class="npm"><b>${esc(p.n)}</b><dl><dt>Weekly</dt><dd>${p.w}</dd><dt>Version</dt><dd>${p.v}</dd><dt>Published</dt><dd>${esc(p.u)}</dd><dt>Repo</dt><dd>${esc(p.r)}</dd></dl></div>`).join('')}</div>
+ <p class="ask">ဘာလုပ်မလဲ?</p><div class="opts" id="o">${shuffle([{k:'real',t:'Agent ပြောတာ မထည့်ဘူး — stack ထဲမှာ ရှိပြီးသား @supabase/supabase-js နဲ့ပဲ login လုပ်ခိုင်း'},{k:'fake',t:'Agent ပြောတဲ့အတိုင်း supabase-auth-helperz ထည့်'},{k:'free',t:'supabase-js-free ထည့် — အခမဲ့ဆိုတော့'}]).map((x,i)=>`<button class="opt" type="button" data-k="${x.k}"><span class="k">${i+1}</span><span>${esc(x.t)}</span></button>`).join('')}</div>`;
+ $$('#o .opt',el).forEach(b=>b.onclick=()=>{const k=b.dataset.k,ok=k==='real';$$('#o .opt',el).forEach(x=>{x.disabled=true;x.classList.add(x.dataset.k==='real'?'right':x===b?'wrong':'dim')});
+  done({score:ok?1:0,fx:{s:ok?0:-20},lessons:[{id:'package',ok}],head:ok?'Package အတုကို ရှောင်လိုက်တယ်':'အန္တရာယ်ရှိတဲ့ package ဝင်သွားပြီ',
+   body:'<p>Weekly downloads ၁၂ ခု၊ ၂ ရက်ကမှ တင်ထား၊ repo မရှိ — AI က လုပ်ကြံထားတဲ့ နာမည်ကို တစ်ယောက်ယောက်က တကယ်တင်ထားတာ ဖြစ်နိုင်တယ်။ Install လုပ်လိုက်တာနဲ့ အဲ့ code က မင်းစက်ပေါ်နဲ့ app ထဲမှာ run တယ်။</p>'})});
+}
+function stepRls(el,done){
+ const NOTES=[{o:'Aung',t:'Physics chapter 3',d:'Newton ရဲ့ ဒုတိယ နိယာမ…'},{o:'Aung',t:'English essay outline',d:'Introduction မှာ…'},{o:'Mya',t:'ကိုယ်ရေးကိုယ်တာ မှတ်စု',d:'ဒီလ စုထားတဲ့ ပိုက်ဆံ…'},{o:'Mya',t:'ဆေးရုံ appointment',d:'ဗုဒ္ဓဟူးနေ့ ၁၀ နာရီ…'}];
+ const O=shuffle([{k:'rls',t:'notes table မှာ RLS ဖွင့်ပြီး "ကိုယ့် row ကိုယ်ပဲ" policy ထည့် — account ၂ ခုနဲ့ ပြန်စမ်း'},{k:'fe',t:'Frontend မှာ owner !== me ဆိုတဲ့ note တွေကို filter လုပ်ပြီး ဖျောက်'},{k:'ok',t:'ကိုယ့် note ကိုယ်တွေ့နေတာပဲ — ပြဿနာ မရှိဘူး'}]);
+ el.innerHTML=`<p class="eyebrow">Step 4 · Account ၂ ခုနဲ့ စမ်း</p><h2>Aung နဲ့ login ဝင်ကြည့်တော့…</h2>
+ <div class="lines"><div class="fh"><span>Study Notes · logged in as <b>Aung</b></span><span>notes (4)</span></div>${NOTES.map(n=>`<div class="ln" style="cursor:default"><span class="lv">${n.o}</span><span><b>${esc(n.t)}</b> — ${esc(n.d)}</span></div>`).join('')}</div>
+ <p class="ask">ဘာလုပ်မလဲ?</p><div class="opts" id="o">${O.map((x,i)=>`<button class="opt" type="button" data-k="${x.k}"><span class="k">${i+1}</span><span>${esc(x.t)}</span></button>`).join('')}</div>`;
+ $$('#o .opt',el).forEach(b=>b.onclick=()=>{const k=b.dataset.k,ok=k==='rls';$$('#o .opt',el).forEach(x=>{x.disabled=true;x.classList.add(x.dataset.k==='rls'?'right':x===b?'wrong':'dim')});
+  done({score:ok?1:0,fx:{s:ok?0:k==='fe'?-15:-25},lessons:[{id:'rls',ok}],head:ok?'Mya ရဲ့ note တွေ လုံခြုံသွားပြီ':'Mya ရဲ့ data ပေါက်နေတုန်းပဲ',
+   body:`<p>${k==='fe'?'Frontend မှာ ဖျောက်ရင်တောင် Mya ရဲ့ note တွေက browser ထဲ download ဖြစ်ပြီးသား — DevTools Network tab မှာ မြင်ရတယ်။ ':''}Database ကိုယ်တိုင်က "ဒီ row က မင်းဟာ မဟုတ်ဘူး" လို့ ငြင်းမှ လုံခြုံတယ်။ ပြင်ပြီးရင် Aung နဲ့ Mya account ၂ ခုလုံးနဲ့ ဝင်ပြီး တစ်ယောက် note တစ်ယောက် မမြင်ရကြောင်း စစ်ပါ။</p>`+fileBox('supabase · RLS',D.code.rls)})});
+}
+
+/* ===== Day 7 · launch QA ===== */
+function phoneScreen(scr,cond){
+ const notes=[['Newton ရဲ့ နိယာမ ၃ ခု','physics · ၂ ရက်က'],['သင်္ချာ — Quadratic equation','math · ၃ ရက်က'],['English tenses ၁၂ မျိုး','english · ၅ ရက်က'],['သင်္ချာ — Probability','math · ၁ ပတ်က']];
+ const list=n=>n.map(x=>`<div class="nt"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+ const sk='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
+ if(scr==='notes'){
+  if(cond==='normal')return {h:list(notes)};
+  if(cond==='empty')return {h:'',bug:'empty'};
+  if(cond==='offline')return {h:'<div class="spin"></div><div class="center">Loading…</div>',bug:'error'};
+  return {h:sk};
+ }
+ if(scr==='search'){
+  const box=`<div class="inp${cond==='empty'?'':''}">${cond==='empty'?'zzz':'သင်္ချာ'}</div>`;
+  if(cond==='normal')return {h:box+list(notes.filter(x=>x[0].includes('သင်္ချာ')))};
+  if(cond==='empty')return {h:box,bug:'empty'};
+  if(cond==='offline')return {h:box+'<div class="center" style="margin-top:30px"><b>ချိတ်ဆက်လို့ မရပါ</b>Internet ပြန်ရရင် ထပ်ကြိုးစားပါ<br><span class="pbtn">ပြန်ကြိုးစား</span></div>'};
+  return {h:box+'<div class="spin"></div>'};
+ }
+ const form='<div class="inp">Newton ရဲ့ နိယာမ ၃ ခု</div><div class="inp" style="height:150px">ပထမ နိယာမ — အရာဝတ္ထုတစ်ခုဟာ…</div>';
+ if(cond==='normal')return {h:form+'<div><span class="pbtn">Save</span></div>'};
+ if(cond==='empty')return {h:'<div class="inp ph">Title</div><div class="inp ph" style="height:150px">မှတ်စု ရေးပါ…</div><div><span class="pbtn" style="opacity:.5">Save</span></div>'};
+ if(cond==='offline')return {h:form+'<div class="center" style="background:#fdeee7;border-radius:10px;padding:8px;color:#c2410c">Save မရပါ — offline ဖြစ်နေတယ်။ <u>ပြန်ကြိုးစား</u></div>'};
+ return {h:form+'<div><span class="pbtn" style="opacity:.7">Saving…</span></div>'};
+}
+function stepQA(el,done){
+ const SCR=[['notes','Notes'],['search','Search'],['editor','Editor']],CON=[['normal','ပုံမှန်'],['empty','Data မရှိ'],['offline','Offline'],['slow','Slow 3G']];
+ let scr='notes',cond='normal';const found=new Set();let falseN=0,wrongType=0;
+ el.innerHTML=`<p class="eyebrow">Step 1 · ကိုယ်တိုင် နှိပ်ကြည့်</p><h2>App ကို စမ်းပြီး ပျောက်နေတဲ့ state တွေကို ဖမ်းပါ</h2>
+ <div class="story">Screen နဲ့ condition ကို ပြောင်းပြီး ကြည့်ပါ။ Screen ဗလာ၊ ဘယ်တော့မှ မပြီးတဲ့ loading လိုမျိုး <b>bug ၃ ခု</b> ဝှက်ထားတယ်။</div>
+ <div class="qa"><div class="phone" aria-label="Study Notes app preview"><div class="sb"><span>9:41</span><span id="sig">●●●</span></div><div class="ah"><b id="ttl">Notes</b><small>Study Notes</small></div><div class="bd" id="pbd"></div><div class="tabs" id="ptabs"></div></div>
+ <div class="ctl"><div><div class="sl" style="font:700 12px var(--mono);color:var(--faint);margin-bottom:6px">SCREEN</div><div class="seg2" id="s1">${SCR.map(s=>`<button type="button" data-v="${s[0]}">${s[1]}</button>`).join('')}</div></div>
+ <div><div class="sl" style="font:700 12px var(--mono);color:var(--faint);margin-bottom:6px">CONDITION</div><div class="seg2" id="s2">${CON.map(s=>`<button type="button" data-v="${s[0]}">${s[1]}</button>`).join('')}</div></div>
+ <div><button class="btn" id="bug" type="button">ဒီ screen မှာ bug ရှိတယ်</button><div class="opts" id="bt" hidden style="margin-top:8px">${[['loading','Loading state မရှိဘူး'],['error','Error state (retry) မရှိဘူး'],['empty','Empty state မရှိဘူး']].map(x=>`<button class="opt" type="button" data-v="${x[0]}"><span>${x[1]}</span></button>`).join('')}</div></div>
+ <div><div class="counter" id="fc">ဖမ်းမိ 0 / 3</div><div class="found" id="fl"></div></div>
+ <div><button class="btn pri" id="go" type="button">စမ်းပြီးပြီ</button></div></div></div>`;
+ const render=()=>{const r=phoneScreen(scr,cond);$('#pbd').innerHTML=r.h;$('#ttl').textContent=SCR.find(s=>s[0]===scr)[1];$('#sig').textContent=cond==='offline'?'✕ offline':cond==='slow'?'3G':'●●●';
+  $('#ptabs').innerHTML=SCR.map(s=>`<span class="${s[0]===scr?'on':''}">${s[1]}</span>`).join('');
+  $$('#s1 button').forEach(b=>b.classList.toggle('on',b.dataset.v===scr));$$('#s2 button').forEach(b=>b.classList.toggle('on',b.dataset.v===cond));$('#bt').hidden=true};
+ $$('#s1 button').forEach(b=>b.onclick=()=>{scr=b.dataset.v;render()});$$('#s2 button').forEach(b=>b.onclick=()=>{cond=b.dataset.v;render()});
+ $('#bug').onclick=()=>{$('#bt').hidden=!$('#bt').hidden};
+ $$('#bt .opt').forEach(b=>b.onclick=()=>{const r=phoneScreen(scr,cond),key=scr+'/'+cond;$('#bt').hidden=true;
+  if(!r.bug){falseN++;toast('ဒီ screen က ကောင်းနေတယ် — state ရှိပြီးသား');return}
+  if(found.has(key)){toast('ဒါ ဖမ်းပြီးသား');return}
+  if(r.bug!==b.dataset.v){wrongType++;toast('Bug ရှိတာ မှန်တယ် — ဒါပေမဲ့ ပျောက်နေတာ တခြား state');return}
+  found.add(key);$('#fc').textContent=`ဖမ်းမိ ${found.size} / 3`;$('#fl').insertAdjacentHTML('beforeend',`<div>${SCR.find(s=>s[0]===scr)[1]} · ${CON.find(c=>c[0]===cond)[1]} → ${b.textContent}</div>`);toast('Bug ဖမ်းမိပြီ')});
+ render();
+ $('#go').onclick=()=>{
+  $$('#s1 button,#s2 button,#bug,#go,#bt .opt').forEach(b=>b.disabled=true);
+  const missed=3-found.size;
+  done({score:clamp(found.size/3-(falseN+wrongType)*.1,0,1),fx:{h:-10*missed},lessons:[{id:'states',ok:!missed&&falseN+wrongType<=1}],head:missed?`Bug ${missed} ခု user ဆီ ရောက်သွားမယ်`:'Bug အကုန် ဖမ်းမိတယ်',
+   body:`<ul><li><b>Notes · Data မရှိ</b> — screen ဗလာ။ "မှတ်စု မရှိသေးပါ + ရေးမယ်" ဆိုတဲ့ empty state လိုတယ်</li><li><b>Notes · Offline</b> — Loading… ဘယ်တော့မှ မပြီး။ Error message နဲ့ retry ခလုတ် လိုတယ်</li><li><b>Search · ရလဒ်မရှိ</b> — ဘာမှ မပြ။ "မတွေ့ပါ" လိုတယ်</li></ul>`+fileBox('prompt · states audit',D.code.states)});
+ };
+}
+function stepPreflight(el,done){
+ const IT=shuffle([{k:'budget',t:'Gemini နဲ့ Supabase မှာ budget limit / spending alert ထား',g:1,fx:{b:-25},miss:'Bug တစ်ခုက API ကို loop ခေါ်နေတာ မနက်ရောက်မှ သိတယ်'},{k:'sentry',t:'Sentry (error tracking) ထည့်',g:1,fx:{h:-6},miss:'User ဘက်က error တွေကို ကိုယ်မသိဘူး'},{k:'backup',t:'Migration မ run ခင် database backup ယူ',g:1,fx:{h:-12},miss:'Migration မှားပြီး user note တချို့ ပျောက်သွားတယ်'},{k:'preview',t:'Preview deploy မှာ အရင်စမ်းပြီးမှ production ကို ပို့',g:1,fx:{h:-8},miss:'စမ်းမထားတဲ့ build က production ကို တန်းရောက်သွားတယ်'},{k:'friday',t:'Production ကို တိုက်ရိုက် push — preview မလို',g:0,fx:{h:-8}},{k:'skip',t:'Test တွေ ကျော်ပြီး ဒီညပဲ launch',g:0,fx:{h:-8}},{k:'hide',t:'Error တွေ user မမြင်အောင် catch လုပ်ပြီး ဘာမှ မပြ',g:0,fx:{h:-6}}]);
+ const sel=new Set();
+ el.innerHTML=`<p class="eyebrow">Step 2 · Pre-flight</p><h2>Launch မလုပ်ခင် ဘာတွေ လုပ်ထားမလဲ?</h2>
+ <div class="story">လုပ်မယ့်အရာတွေကိုပဲ ရွေးပါ။ မဖြစ်သင့်တာတွေ ရောထားတယ်။</div>
+ <div class="opts" id="o">${IT.map((x,i)=>`<button class="chk" type="button" data-i="${i}">${esc(x.t)}</button>`).join('')}</div>
+ <div class="row end" style="margin-top:14px"><button class="btn pri" id="go" type="button">Launch လုပ်မယ်</button></div>`;
+ $$('#o .chk',el).forEach(b=>b.onclick=()=>{const i=+b.dataset.i;sel.has(i)?sel.delete(i):sel.add(i);b.classList.toggle('sel',sel.has(i))});
+ $('#go').onclick=()=>{
+  const fx={h:0,b:0},notes=[];let good=0,bad=0;
+  IT.forEach((x,i)=>{const on=sel.has(i);if(x.g&&on)good++;if(x.g&&!on){fx.h+=x.fx.h||0;fx.b+=x.fx.b||0;notes.push(x.miss)}if(!x.g&&on){bad++;fx.h+=x.fx.h}});
+  $$('#o .chk',el).forEach(b=>{const x=IT[+b.dataset.i];b.disabled=true;if(sel.has(+b.dataset.i))b.classList.add(x.g?'right':'wrong');else if(x.g)b.classList.add('miss')});$('#go').disabled=true;
+  done({score:clamp((good-bad)/4,0,1),fx,lessons:[{id:'preflight',ok:good===4&&!bad}],head:good===4&&!bad?'Launch ဖို့ အဆင်သင့်':'ပြင်ဆင်မှု လိုသေးတယ်',
+   body:notes.length?`<p>Launch ညမှာ ဖြစ်သွားတာ:</p><ul>${notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:'<p>တစ်ခုခု မှားရင် ကိုယ်သိပြီး ထိန်းနိုင်အောင် ကာကွယ်ချက် ၄ ခုလုံး ထားပြီးပြီ။</p>'});
+ };
+}
+
+/* ---------- launch report ---------- */
+function launch(){
+ view='launch';RUN=null;const t=totals();
+ const stars=DAYS.reduce((a,d)=>a+((S.days[d.n]||{}).stars||0),0);
+ const score=Math.round(t.h*.4+t.s*.4+Math.min(t.b,50)/50*20),g=score>=90?'S':score>=75?'A':score>=60?'B':'C';
+ const miss=[...new Set(DAYS.flatMap(d=>(S.days[d.n]||{}).miss||[]))];
+ const head={S:'Launch ချောချောမွေ့မွေ့ ပြီးသွားပြီ',A:'Launch အောင်မြင်တယ် — ပြဿနာ သေးသေးလေးတွေပဲ',B:'Launch ဖြစ်သွားပေမဲ့ ညဘက် bug ပြင်ရမယ်',C:'Launch က ပြဿနာ များနေတယ်'}[g];
+ $('#view').innerHTML=`<section class="hero"><p class="eyebrow">Day 7 · Launch report</p><div class="grade">${g}</div><h1 style="margin-top:8px">${head}</h1>
+ <p class="lede">App health ${t.h} · Security ${t.s} · Budget $${t.b} · ကြယ် ${stars} / 21</p></section>
+ ${miss.length?`<div class="sub">နောက်တစ်ပတ်မှာ ပြင်ရမယ့်အချက် <small>${miss.length} ခု</small></div>${miss.map(id=>lessonBox(id,false)).join('')}`:'<div class="sub">နောက်တစ်ပတ်မှာ ပြင်ရမယ့်အချက်</div><p class="lede">မရှိဘူး — ရက်တိုင်း သင်ခန်းစာ အကုန် မှန်ခဲ့တယ်။</p>'}
+ <div class="row" style="margin-top:28px"><button class="btn pri" id="warm" type="button">Warm-up လုပ်မယ်</button><button class="btn" id="tohome" type="button">Week board</button></div>`;
+ $('#warm').onclick=warmup;$('#tohome').onclick=home;window.scrollTo(0,0);
+}
+
+/* ---------- warm-up: lessons you missed come back as quick questions ---------- */
+function warmup(){
+ let ids=dueLessons();const practice=!ids.length;
+ if(practice)ids=shuffle(Object.keys(S.lessons)).slice(0,5);else ids=shuffle(ids).slice(0,5);
+ if(!ids.length){toast('ကစားပြီးမှ warm-up ရမယ်');return}
+ let i=0,ok=0;view='warm';
+ const q=()=>{const id=ids[i],l=L[id],o=shuffle(l.o.map((t,k)=>({t,c:k===0})));
+  $('#view').innerHTML=`<div class="phead"><button class="x" id="quit" type="button" aria-label="ထွက်မယ်">✕</button><div class="segs">${ids.map((_,k)=>`<i class="${k<i?'done':k===i?'cur':''}"></i>`).join('')}</div><span class="tag">Warm-up${practice?' · practice':''}</span></div>
+  <div class="stage" id="stage"><p class="eyebrow">${esc(l.t)}</p><h2>${esc(l.q)}</h2><div class="opts" id="o" style="margin-top:14px">${o.map((x,k)=>`<button class="opt" type="button" data-k="${k}"><span class="k">${k+1}</span><span>${esc(x.t)}</span></button>`).join('')}</div></div>`;
+  $('#quit').onclick=home;
+  $$('#o .opt').forEach(b=>b.onclick=()=>{const right=o[+b.dataset.k].c;if(right)ok++;gradeLesson(id,right);persist();
+   $$('#o .opt').forEach(x=>{x.disabled=true;x.classList.add(o[+x.dataset.k].c?'right':x===b?'wrong':'dim')});
+   const fb=document.createElement('div');fb.className='fb '+(right?'ok':'no');fb.innerHTML=`<div class="fb-h"><b>${right?'မှန်တယ်':'မှားသွားတယ်'}</b></div><div class="why"><p>${esc(l.why)}</p></div><div class="row end"><button class="btn pri" id="next" type="button">${i+1<ids.length?'ဆက်သွားမယ် →':'ပြီးပြီ'}</button></div>`;
+   $('#stage').appendChild(fb);$('#next').focus({preventScroll:true});$('#next').onclick=()=>{i++;if(i<ids.length)q();else{toast(`${ok} / ${ids.length} မှန်တယ်`);home()}}});
+ };q();window.scrollTo(0,0);
+}
+
+/* ---------- home ---------- */
+function home(){
+ view='home';RUN=null;meters();
+ const next=DAYS.find(d=>!dayDone(d.n)),due=dueLessons().length,all7=dayDone(7);
+ $('#view').innerHTML=`<section class="hero"><p class="eyebrow">Vibe coding · ၇ ရက်</p>
+ <h1>Study Notes ကို ဒီတစ်ပတ်အတွင်း launch လုပ်ပါ</h1>
+ <p class="lede">AI agent နဲ့ app ဆောက်တဲ့ တစ်ပတ်ကို ကိုယ်တိုင် ဖြတ်သန်းရမယ်။ ရက်တိုင်း guide ရဲ့ အပိုင်းတစ်ခုကို လုပ်ကြည့်ရမယ် — prompt ရေး၊ terminal ရိုက်၊ PR စစ်၊ key ပေါက်တာ ကိုင်တွယ်၊ app စမ်း။ ဆုံးဖြတ်ချက်တိုင်းက app ရဲ့ health၊ security၊ budget ကို ပြောင်းစေတယ်။</p></section>
+ <div class="week">${DAYS.map(d=>{const st=S.days[d.n],lock=!unlocked(d.n),isNext=next&&next.n===d.n;
+  return `<button class="day ${isNext?'next':''}" type="button" data-n="${d.n}" ${lock?'disabled':''}>${lock?LOCK:''}<span class="dn">DAY ${d.n} · ${esc(d.w)}</span><span class="dw">${d.phase}</span><span class="dp">${esc(d.title)}</span><span class="st">${[1,2,3].map(k=>`<span class="star ${st&&st.stars>=k?'on':''}">${STAR}</span>`).join('')}</span></button>`}).join('')}</div>
+ <div class="cta"><div><b>${next?`Day ${next.n} · ${next.phase}`:all7?'Launch ပြီးပြီ':'—'}</b><p>${next?esc(next.story):'Launch report ကို ပြန်ကြည့်လို့ရတယ်၊ ရက်တစ်ရက်ကို ပြန်ကစားပြီး ကြယ်ပိုရအောင် လုပ်လို့ရတယ်။'}</p></div><div class="row">${due?`<button class="btn" id="warm" type="button">Warm-up · ${due}</button>`:''}${next?`<button class="btn pri" id="go" type="button">စမယ် →</button>`:`<button class="btn pri" id="report" type="button">Launch report</button>`}</div></div>
+ <div class="sub">Toolkit <small>${TOOLS.filter(t=>dayDone(t.day)).length} / ${TOOLS.length} · copy ကူးပြီး တကယ်သုံးလို့ရ</small></div>
+ <div class="cards">${TOOLS.map(t=>dayDone(t.day)?`<button class="cc" type="button" data-tool="${t.id}"><span class="mono">${esc(t.name)}</span><span>${esc(t.t)}</span></button>`:`<div class="cc lock"><b>Day ${t.day} ပြီးရင် ရမယ်</b><span>${esc(t.t)}</span></div>`).join('')}</div>
+ <div class="sub">ဝေါဟာရ <small>${Object.keys(GLOSS_DAY).filter(n=>dayDone(+n)).flatMap(n=>GLOSS_DAY[n]).length} / ${D.glossary.length}</small></div>
+ <div class="cards">${D.glossary.map(g=>{const dn=+Object.keys(GLOSS_DAY).find(n=>GLOSS_DAY[n].includes(g.term));return dayDone(dn)?`<button class="cc" type="button" data-g="${esc(g.term)}"><b>${esc(g.term)}</b><span>${esc(g.sub)}</span></button>`:`<div class="cc lock"><b>???</b><span>Day ${dn} ပြီးရင် ရမယ်</span></div>`}).join('')}</div>
+ <div class="sub">ဘယ်လို ကစားလဲ</div>
+ <div class="how"><div><b>လုပ်ကြည့်ရင်း သင်</b>ရှင်းချက်ကို အရင်မဖတ်ရဘူး။ ကိုယ်တိုင် ဆုံးဖြတ်ပြီးမှ ဘာဖြစ်သွားလဲ မြင်ရမယ်။</div><div><b>မှားတာ ပြန်လာမယ်</b>မှားခဲ့တဲ့ သင်ခန်းစာတွေက warm-up ထဲမှာ ၁ → ၂ → ၄ → ၈ ရက်ခြား ပြန်ပေါ်မယ်။</div><div><b>Toolkit ကို တကယ်သုံး</b>ရက်ပြီးတိုင်း spec၊ AGENTS.md၊ prompt၊ bug report template တွေ ရမယ် — ကိုယ့် project မှာ copy ကူးသုံးပါ။</div></div>`;
+ $$('.day').forEach(b=>b.onclick=()=>playDay(+b.dataset.n));
+ if($('#go'))$('#go').onclick=()=>playDay(next.n);if($('#report'))$('#report').onclick=launch;if($('#warm'))$('#warm').onclick=warmup;
+ $$('[data-tool]').forEach(b=>b.onclick=()=>{const t=TOOLS.find(x=>x.id===b.dataset.tool);sheet(`<p class="eyebrow">Toolkit · Day ${t.day}</p><h2>${esc(t.t)}</h2>${fileBox(t.name,t.code)}`)});
+ $$('[data-g]').forEach(b=>b.onclick=()=>{const g=D.glossary.find(x=>x.term===b.dataset.g);sheet(`<p class="eyebrow">ဝေါဟာရ</p><h2>${esc(g.term)}</h2><p class="mono" style="color:var(--faint)">${esc(g.sub)}</p><p class="lede">${esc(g.def)}</p>`)});
+ window.scrollTo(0,0);
+}
+function sheet(html){
+ const layer=$('#layer');layer.innerHTML=`<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true"><button class="x" id="close" type="button" aria-label="ပိတ်မယ်">✕</button>${html}</div></div>`;
+ const close=()=>{layer.innerHTML='';document.removeEventListener('keydown',k)};const k=e=>{if(e.key==='Escape')close()};
+ document.addEventListener('keydown',k);$('#close').onclick=close;$('#scrim').onclick=e=>{if(e.target.id==='scrim')close()};bindCopy(layer);$('#close').focus();
+}
+
+$('#home-link').onclick=home;
+home();initSync();
+</script>
